@@ -7,7 +7,7 @@ the World of Spectrum forums
 
 ## Compile
 Znake was compiled using Pasmo:
-pasmo --name znake --tapbas znake.z8a znake.tap
+`pasmo --name znake --tapbas znake.z8a znake.tap`
 
 ## Todo
 * High score
