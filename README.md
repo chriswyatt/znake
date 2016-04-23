@@ -16,6 +16,7 @@ Znake was compiled using Pasmo:
 ## Known issues
 * Game can occasionally restart unexpectedly (i.e. snake seems to collide with
   itself, when it shouldn't)
+* Timing is jerky, especially when the snake eats food
 
 ## License
 See LICENSE
