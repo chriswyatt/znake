@@ -1,0 +1,2443 @@
+; /////////////////////////////////////////////////////////////////////////////
+
+; Znake (ZX Spectrum 48K)
+
+; Copyright (C) 2016, Chris Wyatt
+
+; All rights reserved
+
+; Distributed under the Apache 2 license (see LICENSE)
+
+; /////////////////////////////////////////////////////////////////////////////
+
+; The memory address of the table must be kept aligned to a multiple of 256
+; bytes
+org 0x8000
+
+snake_history:
+
+    ; Every time the snake changes direction, the turning point location will
+    ; be appended to the following table, and snake_history_head_offset (end)
+    ; offset) will be incremented by 1
+
+    ; Once the tail has completed a turn, the snake_history_tail_offset (start)
+    ; will be incremented by 1
+
+    ; Both tables are purposefully 256 bytes, so that the offsets will wrap
+    ; around to 0 whenever they exceed 255. Also the play field is 16 x 16 and
+    ; theoretically the snake could turn at every location in the grid;
+    ; however, this is rather unlikely.
+
+    ; Data that does not lie within start and end offset will remain in the
+    ; table; there is no need to null it
+
+    ; Initially the tables contain the snake's tail and head (in that order)
+
+    ; The high byte contains the X coordinate, and the low byte contains the Y
+    ; coordinate
+
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+
+org 0x8100
+
+    ; Graphics
+
+    ; blank (used to clear parts of the screen)
+    db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+
+    ; snake head up
+    db 0x00, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e
+
+    ; snake head right
+    db 0x00, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0x00
+
+    ; snake head down
+    db 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x00
+
+    ; snake head left
+    db 0x00, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x00
+
+    ; snake body up/down
+    db 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e
+
+    ; snake body left/right
+    db 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00
+
+    ; snake body up-right / left-down
+    db 0x00, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7e
+
+    ; snake body down-right / left-up
+    db 0x7e, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x00
+
+    ; snake body down-left / right-up
+    db 0x7e, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0x00
+
+    ; snake body up-left / right-down
+    db 0x00, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0x7e
+
+    ; snake tail up
+    db 0x00, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e
+
+    ; snake tail right
+    db 0x00, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0x00
+
+    ; snake tail down
+    db 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x7e, 0x00
+
+    ; snake tail left
+    db 0x00, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x00
+
+    ; food
+    db 0x00, 0x18, 0x18, 0x66, 0x66, 0x18, 0x18, 0x00
+
+    ; Border top
+    db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x00
+
+    ; Border right
+    db 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40
+
+    ; Border bottom
+    db 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+
+    ; Border left
+    db 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02
+
+    ; Border top-right
+    db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0x40
+
+    ; Border bottom-right
+    db 0x40, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+
+    ; Border bottom-left
+    db 0x02, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+
+    ; Border top-left
+    db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x02
+
+    ; 64 bytes padding
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+
+; The following tables hold the top-left and bottom-right coordinates of each
+; free square: i.e., each square that does not contain any snake. This is
+; required to be able to pick the location of new food
+
+; Due to the algorithm that calculates free squares, it is impossible for there
+; to be more than 192 squares required. In reality, this would be even less due
+; to the snake not being able to chop itself into small pieces, but I have no
+; idea how to calculate the actual space required.
+
+; The high bytes contain the X coordinates, and the low bytes contain the Y
+; coordinates
+
+org 0x8200
+
+free_squares_tl:
+
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+
+    ; 64 bytes padding
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+
+free_squares_br:
+
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+
+; Starting offset for snake history
+snake_history_tail_offset: db 0x00
+
+; End offset for snake history
+snake_history_head_offset: db 0x00
+
+; The length of both free squares tables (byte per item)
+free_squares_length: db 0x00
+
+; Current direction of snake (bits: 0000UDLR)
+snake_direction_current: db 0x00
+
+; Snake direction queue (bits: UDLRUDLR)
+; (low bits have higher priority)
+snake_direction_queue: db 0x00
+
+; The previous location of the snake's food
+previous_food_location: db 0x00
+
+; The current location of the snake's food
+current_food_location: db 0xab
+
+; Bit 0: Food eaten
+; Bit 1: Grow snake
+; Bits 2-7: Reserved
+flags: db 0x00
+
+; This random number generator is probably quite crappy. If the crappiness is
+; observable from the food placement, we could look into improving this.
+rnd:
+
+    ; If register b = 0, return
+    ld a,b
+    or a
+    ret z
+
+    ; Uses register b as the upper limit
+
+    push bc
+    push hl
+
+    ; Frame counter
+    ld hl,0x5c78
+
+    ld a,(hl)
+    ld h,a
+
+    ; Shifting between 0-7 times should be reasonable
+    and 0x07
+
+    ; Counter
+    ld c,a
+
+    ; Load random number back into register a, so we can rotate it
+    ld a,h
+
+rotate_rnd_num:
+
+    rl a
+
+    dec c
+    jp nz,rotate_rnd_num
+
+    ld h,a
+
+    ; Add old snake history
+    ld a,(snake_history)
+    add a,h
+    ld h,a
+
+    ; Add current food location
+    ld a,(current_food_location)
+    add a,h
+    ld h,a
+
+    ; Add previous food location
+    ld a,(previous_food_location)
+    add a,h
+
+    ; Compare the result to the upper limit
+    cp b
+
+    ; If within range, jump out of loop
+    jp c,rnd_end
+
+    ; Otherwise, try and xor with upper limit
+    xor 0xff
+    
+    ; Compare the result to the upper limit
+    cp b
+
+    ; If within range, jump out of loop
+    jp c,rnd_end
+
+rnd_loop:
+
+    sla a
+    cp b
+    jp nc,rnd_loop
+
+rnd_end:
+
+    pop hl
+    pop bc
+    ret
+
+start:
+
+    ei
+    halt
+
+    ; Set border color to black
+    ld a,0
+    call $229B
+
+    halt
+
+    ; Clear screen
+    ld hl,0x4000
+    ld de,0x4001
+    ld bc,0x17ff
+    ld (hl),0
+    ldir
+
+    halt
+    di
+
+draw_top_border:
+
+    ld b,16
+
+    ; Location of border top
+    ld hl,0x8180
+
+    ; Column/row
+    ld d,8
+    ld e,3
+
+draw_top_border_next:
+
+    push bc
+    push de
+    push hl
+    call draw_char
+    pop hl
+    pop de
+    pop bc
+
+    inc d
+    dec b
+    jp nz,draw_top_border_next
+
+draw_right_border:
+
+    ld b,16
+
+    ; Location of border right
+    ld hl,0x8188
+
+    ; Column/row
+    ld d,24
+    ld e,4
+
+draw_right_border_next:
+
+    push bc
+    push de
+    push hl
+    call draw_char
+    pop hl
+    pop de
+    pop bc
+
+    inc e
+    dec b
+    jp nz,draw_right_border_next
+
+draw_bottom_border:
+
+    ld b,16
+
+    ; Location of border top
+    ld hl,0x8190
+
+    ; Column/row
+    ld d,8
+    ld e,20
+
+draw_bottom_border_next:
+
+    push bc
+    push de
+    push hl
+    call draw_char
+    pop hl
+    pop de
+    pop bc
+
+    inc d
+    dec b
+    jp nz,draw_bottom_border_next
+
+draw_left_border:
+
+    ld b,16
+
+    ; Location of border right
+    ld hl,0x8198
+
+    ; Column/row
+    ld d,7
+    ld e,4
+
+draw_left_border_next:
+
+    push bc
+    push de
+    push hl
+    call draw_char
+    pop hl
+    pop de
+    pop bc
+
+    inc e
+    dec b
+    jp nz,draw_left_border_next
+
+    ; Location of border top-right
+    ld hl,0x81a0
+
+    ; Column/row
+    ld d,24
+    ld e,3
+
+    call draw_char
+
+    ; Location of border bottom-right
+    ld hl,0x81a8
+
+    ; Column/row
+    ld d,24
+    ld e,20
+
+    call draw_char
+
+    ; Location of border bottom-left
+    ld hl,0x81b0
+
+    ; Column/row
+    ld d,7
+    ld e,20
+
+    call draw_char
+
+    ; Location of border top-left
+    ld hl,0x81b8
+
+    ; Column/row
+    ld d,7
+    ld e,3
+
+    call draw_char
+
+    ; Initialise snake
+
+    ld a,0x00
+    ld (snake_history_tail_offset),a
+    ld a,0x01
+    ld (snake_history_head_offset),a
+    ld a,0x02
+    ld (snake_direction_current),a
+    ld a,0x87
+    ld (snake_history),a
+    ld a,0x67
+    ld (snake_history + 1),a
+
+    ; Draw initial snake graphics
+
+    ; Location of snake head left
+    ld hl,0x8120
+
+    ; Column/row
+    ld d,14 ; 6 + 8
+    ld e,11 ; 7 + 4
+
+    call draw_char
+
+    ; Location of snake body left/right
+    ld hl,0x8130
+
+    ; Column/row
+    ld d,15 ; 7 + 8
+    ld e,11 ; 7 + 4
+
+    call draw_char
+
+    ; Location of snake tail right
+    ld hl,0x8160
+
+    ; Column/row
+    ld d,16 ; 8 + 8
+    ld e,11 ; 7 + 4
+
+    call draw_char
+
+    ; Ideally we would pick a random location for the initial food (TODO)
+    ld a,(current_food_location)
+    ld (previous_food_location),a
+    ld a,0x24
+    ld (current_food_location),a
+    ld e,a
+
+    ; Location of food
+    ld hl,0x8178
+
+    ; Column/row
+    and 0xf0
+    srl a
+    srl a
+    srl a
+    srl a
+    add a,8
+    ld d,a
+
+    ld a,e
+    and 0x0f
+    add a,4
+    ld e,a
+
+    call draw_char
+
+initiate_input_loop:
+
+    ei
+
+    ld a,(snake_direction_current)
+    ld d,a
+
+    ld a,(snake_direction_queue)
+    ld e,a
+
+    ; Number of times to loop through input routine, before we move the snake
+    ld bc,1000
+
+input_loop:
+
+    dec bc
+
+    ; If high byte is not zero, wait for input
+    ld a,b
+    or a
+    jp nz,read_kempston_d
+
+    ; Else if low byte is zero, change snake direction
+    ld a,c
+    or a
+    jp z,update_current_direction
+
+    ; Else, wait for input
+
+; Check for diagonal input from Kempston joystick port
+read_kempston_d:
+
+    ; Push input routine loop count to stack
+    push bc
+
+    in a,(0x1f)
+
+    ; up-right (bits 0 and 3)
+    ld b,0x09
+    cp b
+    jp z,kempston_joy_up_right
+
+    ; down-right (bits 0 and 2)
+    ld b,0x05
+    cp b
+    jp z,kempston_joy_down_right
+
+    ; down-left (bits 1 and 2)
+    ld b,0x06
+    cp b
+    jp z,kempston_joy_down_left
+
+    ; up-left (bits 1 and 3)
+    ld b,0x0a
+    cp b
+    jp z,kempston_joy_up_left
+
+    ; Horizontal/vertical logic relies on last queued direction(s)
+
+    ; Get last direction(s)
+    ld a,e
+    or a
+    jp z,direction_not_queued
+
+    ; Otherwise, direction queued
+    ld b,a
+    jp read_kempston_hv
+
+direction_not_queued:
+
+    ld b,d
+
+; Check for horizontal/vertical input from Kempston joystick port
+read_kempston_hv:
+
+    in a,(0x1f)
+
+    bit 3,a ; up
+    jp nz,kempston_joy_up
+    bit 0,a ; right
+    jp nz,kempston_joy_right
+    bit 2,a ; down
+    jp nz,kempston_joy_down
+    bit 1,a ; left
+    jp nz,kempston_joy_left
+
+    ; If no bits are on, make sure that only one direction is queued;
+    ; otherwise the snake may veer off in an unintended direction
+
+    ld a,e
+
+    ; If queue contains 1 direction, jump to next input loop
+    or a
+    jp po,next_input_loop
+
+    ; Else, if queue is empty, jump to next input loop
+    jp z,next_input_loop
+
+    ; Otherwise only keep the highest priority direction
+    srl a
+    srl a
+    srl a
+    srl a
+    ld e,a
+
+next_input_loop:
+
+    ; Pop input routine loop count back from the stack
+    pop bc
+
+    jp input_loop
+
+kempston_joy_up_right:
+
+    ; Load current direction into accumulator
+    ld a,d
+
+    ; If current direction is left or right
+    and 0x03
+    jp nz,queue_up_right
+
+    ; Load current direction into accumulator
+    ld a,d
+
+    ; If current direction is up or down
+    and 0x0c
+    jp nz,queue_right_up
+
+    ; Else ignore
+    jp kempston_d_end
+
+kempston_joy_down_right:
+
+    ; Load current direction into accumulator
+    ld a,d
+
+    ; If current direction is left or right
+    and 0x03
+    jp nz,queue_down_right
+
+    ; Load current direction into accumulator
+    ld a,d
+
+    ; If current direction is up or down
+    and 0x0c
+    jp nz,queue_right_down
+
+    ; Else ignore
+    jp kempston_d_end
+
+kempston_joy_down_left:
+
+    ; Load current direction into accumulator
+    ld a,d
+
+    ; If current direction is left or right
+    and 0x03
+    jp nz,queue_down_left
+
+    ; Load current direction into accumulator
+    ld a,d
+
+    ; If current direction is up or down
+    and 0x0c
+    jp nz,queue_left_down
+
+    ; Else ignore
+    jp kempston_d_end
+
+kempston_joy_up_left:
+
+    ; Load current direction into accumulator
+    ld a,d
+
+    ; If current direction is left or right
+    and 0x03
+    jp nz,queue_up_left
+
+    ; Load current direction into accumulator
+    ld a,d
+
+    ; If current direction is up or down
+    and 0x0c
+    jp nz,queue_left_up
+
+    ; Else ignore
+    jp kempston_d_end
+
+queue_up_right:
+
+    ld e,0x18
+
+    jp kempston_d_end
+
+queue_right_up:
+
+    ld e,0x81
+
+    jp kempston_d_end
+
+queue_right_down:
+
+    ld e,0x41
+
+    jp kempston_d_end
+
+queue_down_right:
+
+    ld e,0x14
+
+    jp kempston_d_end
+
+queue_down_left:
+
+    ld e,0x24
+
+    jp kempston_d_end
+
+queue_left_down:
+
+    ld e,0x42
+
+    jp kempston_d_end
+
+queue_left_up:
+
+    ld e,0x82
+
+    jp kempston_d_end
+
+queue_up_left:
+
+    ld e,0x28
+
+kempston_d_end:
+
+    ; Because the diagonal checks run faster than the horizontal checks, we
+    ; need to slow it down a bit. There's possibly a cleaner way to do this?
+
+    ; Number of times to loop, before we return to input loop
+    ld b,4
+
+queue_diag_end_loop:
+
+    dec b
+
+    ; If not zero, continue loop
+    jp nz,queue_diag_end_loop
+
+    ; Else start next input loop
+    jp next_input_loop
+
+kempston_joy_up:
+
+    ; Direction requested
+    ld h,0x08
+
+    ; Bitmask for left and right
+    ld l,0x03
+
+    jp kempston_joy_hv
+
+kempston_joy_right:
+
+    ; Direction requested
+    ld h,0x01
+
+    ; Bitmask for up and down
+    ld l,0x0c
+
+    jp kempston_joy_hv
+
+kempston_joy_down:
+
+    ; Direction requested
+    ld h,0x04
+
+    ; Bitmask for left and right
+    ld l,0x03
+
+    jp kempston_joy_hv
+
+kempston_joy_left:
+
+    ; Direction requested
+    ld h,0x02
+
+    ; Bitmask for up and down
+    ld l,0x0c
+
+; Deal with queuing horizontal/vertical direction requests
+kempston_joy_hv:
+
+    ; Load last requested direction into accumulator
+    ld a,b
+
+    ; If last direction requested is not in bitmask, ignore
+    and l
+    jp z,next_input_loop
+
+    ld a,e
+
+    ; If queue contains 0 or 2 directions, replace
+    or a
+    jp pe,replace_direction_queue
+
+    ; Otherwise append
+
+    ld a,h
+    sla a
+    sla a
+    sla a
+    sla a
+    or e
+    ld e,a
+
+    jp next_input_loop
+
+replace_direction_queue:
+
+    ld e,h
+
+    jp next_input_loop
+
+update_current_direction:
+
+    di
+
+    ; If direction not queued, jump
+    ld a,e
+    and 0x0f
+    jp z,update_tail_history
+
+    ld d,a
+
+    ld a,e
+    srl a
+    srl a
+    srl a
+    srl a
+    ld e,a
+
+update_tail_history:
+
+    ; We need to free up these registers now
+
+    ld a,d
+    ld (snake_direction_current),a
+
+    ld a,e
+    ld (snake_direction_queue),a
+
+    ; If the snake has been requested to grow, do not update tail
+    ld hl,flags
+    bit 1,(hl)
+    jp nz,update_head_history
+
+    ; Move pointer to start of snake history
+    ld hl,snake_history
+    ld a,(snake_history_tail_offset)
+    ld l,a
+
+    ; Load current tail location to register b
+    ld b,(hl)
+
+    ; Low bit of graphics (blank)
+    ld c,0x00
+
+    ; Draw later
+    push bc
+
+    ; Move pointer to turn (or head) before tail
+    inc l
+
+    ; Load current turn location to register d
+    ld d,(hl)
+
+    ; If turn X minus tail X is not zero, we know the snake is moving in that
+    ; axis
+    ld a,b
+    and 0xf0
+    ld c,a
+    ld a,d
+    and 0xf0
+    sub c
+    jp nz,tail_moving_horizontally
+
+    ; Otherwise the tail must be moving vertically. We use the carry flag to
+    ; check if it's moving in a negative direction (i.e. up).
+    ld a,b
+    and 0x0f
+    ld c,a
+    ld a,d
+    and 0x0f
+    sub c
+    jp c,tail_moving_up
+    jp tail_moving_down
+
+tail_moving_horizontally:
+
+    jp c,tail_moving_left
+    jp tail_moving_right
+
+tail_moving_up:
+
+    ; If the distance from turn to tail is -1, chop off the tail and let the
+    ; turn become the new tail. It's gruesome, but it works.
+    and 0x0f
+    cp 0x0f
+    jp z,chop_off_tail
+
+    ; Get tail location again and calculate the new Y value
+    ld a,b
+    and 0x0f
+    dec a
+
+    ; OR high (X) and low (Y) bits together, with the existing value of X and
+    ; the updated value of Y
+    ld c,a
+    ld a,b
+    and 0xf0
+    or c
+    ld b,a
+
+    ; Low bit of graphics
+    ld c,0x68
+
+    ; Draw later
+    push bc
+
+    ; Move pointer back to tail
+    dec l
+
+    ; And update the existing tail location in our table
+    ld (hl),b
+
+    jp update_head_history
+
+tail_moving_right:
+
+    ; If the distance from turn to tail is 1, chop off the tail and let the
+    ; turn become the new tail. It's gruesome, but it works.
+    cp 0x10
+    jp z,chop_off_tail
+
+    ; Get tail location again and shift it right
+    ld a,b
+    add a,0x10
+
+    ; Push new location back to b register
+    ld b,a
+
+    ; Low bit of graphics
+    ld c,0x70
+
+    ; Draw later
+    push bc
+
+    ; Otherwise, move pointer back to tail
+    dec l
+
+    ; And update the existing tail location in our table
+    ld (hl),b
+
+    jp update_head_history
+
+tail_moving_left:
+
+    ; If the distance from turn to tail is -1, chop off the tail and let the
+    ; turn become the new tail. It's gruesome, but it works.
+    cp 0xf0
+    jp z,chop_off_tail
+
+    ; Get tail location again and shift it left
+    ld a,b
+    sub 0x10
+
+    ; Push new location back to b register
+    ld b,a
+
+    ; Low bit of graphics
+    ld c,0x60
+
+    ; Draw later
+    push bc
+
+    ; Otherwise, move pointer back to tail
+    dec l
+
+    ; And update the existing tail location in our table
+    ld (hl),b
+
+    jp update_head_history
+
+tail_moving_down:
+
+    ; If the distance from turn to tail is 1, chop off the tail and let the
+    ; turn become the new tail. It's gruesome, but it works.
+    and 0x0f
+    cp 0x01
+    jp z,chop_off_tail
+
+    ; Get tail location again and calculate the new Y value
+    ld a,b
+    and 0x0f
+    inc a
+
+    ; OR high (X) and low (Y) bits together, with the existing value of X and
+    ; the updated value of Y
+    ld c,a
+    ld a,b
+    and 0xf0
+    or c
+    ld b,a
+
+    ; Low bit of graphics
+    ld c,0x58
+
+    ; Draw later
+    push bc
+
+    ; Otherwise, move pointer back to tail
+    dec l
+
+    ; And update the existing tail location in our table
+    ld (hl),b
+
+    jp update_head_history
+
+chop_off_tail:
+
+    ; Remove the reference to the old tail, and let the next turn in the
+    ; snake's body be the new tail
+    ld a,(snake_history_tail_offset)
+    inc a
+    ld (snake_history_tail_offset),a
+
+    ; Move pointer to the turn after the new tail
+    inc l
+
+    ; Load new turn location to register b
+    ld b,(hl)
+
+    ; If turn X minus tail X is not zero, we know the snake is moving in that
+    ; axis
+    ld a,d
+    and 0xf0
+    ld c,a
+    ld a,b
+    and 0xf0
+    sub c
+    jp nz,new_tail_moving_horizontally
+
+    ; Otherwise the tail must be moving vertically. We use the carry flag to
+    ; check if it's moving in a negative direction (i.e. up).
+    ld a,d
+    and 0x0f
+    ld c,a
+    ld a,b
+    and 0x0f
+    sub c
+    jp c,new_tail_moving_up
+    jp new_tail_moving_down
+
+new_tail_moving_horizontally:
+
+    jp c,new_tail_moving_left
+    jp new_tail_moving_right
+
+new_tail_moving_up:
+
+    ; Low bit of graphics
+    ld e,0x68
+
+    ; Draw later
+    push de
+
+    jp update_head_history
+
+new_tail_moving_right:
+
+    ; Low bit of graphics
+    ld e,0x70
+
+    ; Draw later
+    push de
+
+    jp update_head_history
+
+new_tail_moving_down:
+
+    ; Low bit of graphics
+    ld e,0x58
+
+    ; Draw later
+    push de
+
+    jp update_head_history
+
+new_tail_moving_left:
+
+    ; Low bit of graphics
+    ld e,0x60
+
+    ; Draw later
+    push de
+
+update_head_history:
+
+    ; Move pointer to end of snake history
+
+    ld a,(snake_history_head_offset)
+    ld hl,snake_history
+    add a,l
+    ld l,a
+
+    ; Load current head location to register b
+    ld b,(hl)
+
+    ; Move pointer to turn (or tail) before head
+    dec l
+
+    ; Load current turn location to register d
+    ld d,(hl)
+
+    ; Store direction that was previously set in the input routine, for later
+    ; use
+    ld a,(snake_direction_current)
+    ld e,a
+
+    ; If head X minus turn X is not zero, we know the snake is moving in that
+    ; axis
+    ld a,d
+    and 0xf0
+    ld c,a
+    ld a,b
+    and 0xf0
+    sub c
+    jp nz,head_moving_horizontally
+
+    ; Otherwise the head must be moving vertically. We use the carry flag to
+    ; check if it's moving in a negative direction (i.e. up).
+    ld a,d
+    and 0x0f
+    ld c,a
+    ld a,b
+    and 0x0f
+    sub c
+    jp c,head_moving_up
+    jp head_moving_down
+
+head_moving_horizontally:
+
+    jp c,head_moving_left
+    jp head_moving_right
+
+head_moving_up:
+
+    ; Move pointer back to head
+    inc l
+
+    ; Load head location to register b
+    ld a,(hl)
+    ld b,a
+
+    ; Depending on the current direction, the new head location may be placed
+    ; to the right or to the left ...
+
+    bit 0,e
+    jp nz,head_turning_up_right
+
+    bit 1,e
+    jp nz,head_turning_up_left
+
+    ; Low bit of graphics
+    ld c,0x28
+
+    ; Draw later
+    push bc
+
+    ; ... otherwise the head is still moving up
+
+    ; Get head location again and shift it up
+    ld a,b
+    and 0x0f
+    dec a
+
+    ; OR high (X) and low (Y) bits together, with the existing value of X and
+    ; the updated value of Y
+    ld c,a
+    ld a,b
+    and 0xf0
+    or c
+    ld b,a
+
+    ; Low bit of graphics
+    ld c,0x08
+
+    ; Draw later
+    push bc
+
+    ; Update the existing head location in our table
+    ld (hl),a
+
+    jp check_food_eaten
+
+head_moving_right:
+
+    ; Move pointer back to head
+    inc l
+
+    ; Load head location to register b
+    ld a,(hl)
+    ld b,a
+
+    ; Depending on the current direction, the new head location may be placed
+    ; to the top or to the bottom ...
+
+    bit 2,e
+    jp nz,head_turning_right_down
+
+    bit 3,e
+    jp nz,head_turning_right_up
+
+    ; Low bit of graphics
+    ld c,0x30
+
+    ; Draw later
+    push bc
+
+    ; ... otherwise the head is still moving right
+
+    ; Get head location again and shift it right
+    ld a,b
+    add a,0x10
+
+    ; Update the existing head location in our table
+    ld (hl),a
+
+    ; Push new head location back to b register
+    ld b,a
+
+    ; Low bit of graphics
+    ld c,0x10
+
+    ; Draw later
+    push bc
+
+    jp check_food_eaten
+
+head_moving_down:
+
+    ; Move pointer back to head
+    inc l
+
+    ; Load head location to register b
+    ld a,(hl)
+    ld b,a
+
+    ; Depending on the current direction, the new head location may be placed
+    ; to the right or to the left ...
+
+    bit 0,e
+    jp nz,head_turning_down_right
+
+    bit 1,e
+    jp nz,head_turning_down_left
+
+    ; Low bit of graphics
+    ld c,0x28
+
+    ; Draw later
+    push bc
+
+    ; ... otherwise the head is still moving up
+
+    ; Get head location again and shift it down
+    ld a,b
+    and 0x0f
+    inc a
+
+    ; OR high (X) and low (Y) bits together, with the existing value of X and
+    ; the updated value of Y
+    ld e,a
+    ld a,b
+    and 0xf0
+    or e
+    ld b,a
+
+    ; Low bit of graphics
+    ld c,0x18
+
+    ; Draw later
+    push bc
+
+    ; Update the existing head location in our table
+    ld (hl),a
+
+    jp check_food_eaten
+
+head_moving_left:
+
+    ; Move pointer back to head
+    inc l
+
+    ; Load head location to register b
+    ld a,(hl)
+    ld b,a
+
+    ; Depending on the current direction, the new head location may be placed
+    ; to the top or to the bottom ...
+
+    bit 2,e
+    jp nz,head_turning_left_down
+
+    bit 3,e
+    jp nz,head_turning_left_up
+
+    ; Low bit of graphics
+    ld c,0x30
+
+    ; Draw later
+    push bc
+
+    ; ... otherwise the head is still moving right
+
+    ; Get head location again and shift it left
+    ld a,b
+    sub 0x10
+
+    ; Update the existing head location in our table
+    ld (hl),a
+
+    ; Push new head location back to b register
+    ld b,a
+
+    ; Low bit of graphics
+    ld c,0x20
+
+    ; Draw later
+    push bc
+
+    jp check_food_eaten
+
+head_turning_up_right:
+
+    ; Low bit of graphics
+    ld c,0x38
+
+    ; Draw later
+    push bc
+
+    ; Get head location again and shift it right
+    ld a,b
+    add a,0x10
+
+    ; Push new head location back to b register
+    ld b,a
+
+    ; Low bit of graphics
+    ld c,0x10
+
+    ; Draw later
+    push bc
+
+    ; Move pointer to new head location
+    inc l
+
+    ; Add new head location to our table
+    ld (hl),a
+
+    ld a,(snake_history_head_offset)
+    inc a
+    ld (snake_history_head_offset),a
+
+    jp check_food_eaten
+
+head_turning_right_up:
+
+    ; Low bit of graphics
+    ld c,0x48
+
+    ; Draw later
+    push bc
+
+    ; Get head location again and calculate the new Y value
+    ld a,b
+    and 0x0f
+    dec a
+
+    ; OR high (X) and low (Y) bits together, with the existing value of X and
+    ; the updated value of Y
+    ld e,a
+    ld a,b
+    and 0xf0
+    or e
+    ld b,a
+
+    ; Low bit of graphics
+    ld c,0x08
+
+    ; Draw later
+    push bc
+
+    ; Move pointer to new head location
+    inc l
+
+    ; Add new head location to our table
+    ld (hl),a
+
+    ld a,(snake_history_head_offset)
+    inc a
+    ld (snake_history_head_offset),a
+
+    jp check_food_eaten
+
+head_turning_right_down:
+
+    ; Low bit of graphics
+    ld c,0x50
+
+    ; Draw later
+    push bc
+
+    ; Get head location again and calculate the new Y value
+    ld a,b
+    and 0x0f
+    inc a
+
+    ; OR high (X) and low (Y) bits together, with the existing value of X and
+    ; the updated value of Y
+    ld e,a
+    ld a,b
+    and 0xf0
+    or e
+    ld b,a
+
+    ; Low bit of graphics
+    ld c,0x18
+
+    ; Draw later
+    push bc
+
+    ; Move pointer to new head location
+    inc l
+
+    ; Add new head location to our table
+    ld (hl),a
+
+    ; Because the snake has turned:
+    ld a,(snake_history_head_offset)
+    inc a
+    ld (snake_history_head_offset),a
+
+    jp check_food_eaten
+
+head_turning_down_right:
+
+    ; Low bit of graphics
+    ld c,0x40
+
+    ; Draw later
+    push bc
+
+    ; Get head location again and shift it right
+    ld a,b
+    add a,0x10
+
+    ; Push new head location back to b register
+    ld b,a
+
+    ; Low bit of graphics
+    ld c,0x10
+
+    ; Draw later
+    push bc
+
+    ; Move pointer to new head location
+    inc l
+
+    ; Add new head location to our table
+    ld (hl),a
+
+    ld a,(snake_history_head_offset)
+    inc a
+    ld (snake_history_head_offset),a
+
+    jp check_food_eaten
+
+head_turning_down_left:
+
+    ; Low bit of graphics
+    ld c,0x48
+
+    ; Draw later
+    push bc
+
+    ; Get head location again and shift it left
+    ld a,b
+    sub 0x10
+
+    ; Push new head location back to b register
+    ld b,a
+
+    ; Low bit of graphics
+    ld c,0x20
+
+    ; Draw later
+    push bc
+
+    ; Move pointer to new head location
+    inc l
+
+    ; Add new head location to our table
+    ld (hl),a
+
+    ld a,(snake_history_head_offset)
+    inc a
+    ld (snake_history_head_offset),a
+
+    jp check_food_eaten
+
+head_turning_left_down:
+
+    ; Low bit of graphics
+    ld c,0x38
+
+    ; Draw later
+    push bc
+
+    ; Get head location again and calculate the new Y value
+    ld a,b
+    and 0x0f
+    inc a
+
+    ; OR high (X) and low (Y) bits together, with the existing value of X and
+    ; the updated value of Y
+    ld e,a
+    ld a,b
+    and 0xf0
+    or e
+    ld b,a
+
+    ; Low bit of graphics
+    ld c,0x18
+
+    ; Draw later
+    push bc
+
+    ; Move pointer to new head location
+    inc l
+
+    ; Add new head location to our table
+    ld (hl),a
+
+    ld a,(snake_history_head_offset)
+    inc a
+    ld (snake_history_head_offset),a
+
+    jp check_food_eaten
+
+head_turning_left_up:
+
+    ; Low bit of graphics
+    ld c,0x40
+
+    ; Draw later
+    push bc
+
+    ; Get head location again and calculate the new Y value
+    ld a,b
+    and 0x0f
+    dec a
+
+    ; OR high (X) and low (Y) bits together, with the existing value of X and
+    ; the updated value of Y
+    ld e,a
+    ld a,b
+    and 0xf0
+    or e
+    ld b,a
+
+    ; Low bit of graphics
+    ld c,0x08
+
+    ; Draw later
+    push bc
+
+    ; Move pointer to new head location
+    inc l
+
+    ; Set new head location up 1 from previous head
+    ld (hl),a
+
+    ; Because the snake has turned:
+    ld a,(snake_history_head_offset)
+    inc a
+    ld (snake_history_head_offset),a
+
+    jp check_food_eaten
+
+head_turning_up_left:
+
+    ; Low bit of graphics
+    ld c,0x50
+
+    ; Draw later
+    push bc
+
+    ; Get head location again and shift it left
+    ld a,b
+    sub 0x10
+
+    ; Push new head location back to b register
+    ld b,a
+
+    ; Low bit of graphics
+    ld c,0x20
+
+    ; Draw later
+    push bc
+
+    ; Move pointer to new head location
+    inc l
+
+    ; Add new head location to our table
+    ld (hl),a
+
+    ld a,(snake_history_head_offset)
+    inc a
+    ld (snake_history_head_offset),a
+
+; The following routine finds free space that is not occupied by the snake, and
+; places new food in this free space. It divides the map into 4 quadrants
+; (TR, BR, BL, TL); any quadrant that does not contain snake is added to the
+; free squares tables; any quadrant that does contain snake is further divided
+; into quadrants until all free space is mapped.
+
+check_food_eaten:
+
+    ld a,(current_food_location)
+    cp (hl)
+
+    ; If location of head does not equal current food location, continue to
+    ; collision detection routine
+    jp nz,collision_detection
+
+    ; Otherwise, set food eaten flag ...
+    ld hl,flags
+    set 0,(hl)
+
+    ; ... and calculate new food location
+
+    ; Initialise tables
+    ld a,0
+    ld (free_squares_length),a
+
+    ; Location of top-left quadrant
+    ld d,0x00
+
+    ; Offset to bottom-left quadrant / width / height
+    ld e,0x08
+
+check_quadrants:
+
+    ; Load bottom-right of top-left quadrant to register b
+    ld a,e
+    sla a
+    sla a
+    sla a
+    sla a
+    or e
+    sub 0x11
+    ld b,a
+
+check_quadrant:
+
+    push de
+
+    ; Set register d to the location of the top-left corner
+    ld a,d
+    add a,e
+    ld d,a
+
+    ; Set register e to the location of the bottom-right corner
+    ld a,d
+    add a,b
+    ld e,a
+
+    push bc
+
+    ld hl,snake_history
+
+    ld a,(snake_history_tail_offset)
+    ld l,a
+
+    ; Initialise counter
+    ld a,(snake_history_head_offset)
+    sub l
+    ld b,a
+
+next_snake_section:
+
+    ; Decrement counter
+    dec b
+
+    push bc
+
+    ; Load first turn or head location to register b
+    ld a,(hl)
+    ld b,a
+
+    ; Load second turn or tail location to register a
+    inc l
+    ld a,(hl)
+
+    push hl
+
+    ; We need to take the lower location from the higher location; thus, we
+    ; need to sort them first.
+
+    ; If the snake is going left or up, jump
+    cp b
+    jp c,negative_direction
+
+    ; Otherwise, the snake is going right or down
+
+    ld h,b
+    ld l,a
+
+    jp check_for_x_overlap
+
+negative_direction:
+
+    ld h,a
+    ld l,b
+
+check_for_x_overlap:
+
+    ; Right of square (A2)
+    ld a,e
+    and 0xf0
+    ld b,a
+
+    ; Tail/turn 1 (B1)
+    ld a,h
+    and 0xf0
+
+    ; If A2 > B1, continue checking for overlap
+    or a
+    cp b
+    jp c,check_for_x_overlap_part_2
+
+    ; If A2 < B1, no overlap
+    jp nz,no_overlap
+
+check_for_x_overlap_part_2:
+
+    ; Head/turn 2 (B2)
+    ld a,l
+    and 0xf0
+    ld b,a
+
+    ; Left of square (A1)
+    ld a,d
+    and 0xf0
+
+    ; If B2 > A1, continue checking for overlap
+    or a
+    cp b
+    jp c,check_for_y_overlap
+
+    ; If B2 < A1, no overlap
+    jp nz,no_overlap
+
+check_for_y_overlap:
+
+    ; Bottom of square (A2)
+    ld a,e
+    and 0x0f
+    ld b,a
+
+    ; Tail/turn 1 (B1)
+    ld a,h
+    and 0x0f
+
+    ; If A2 > B1, continue checking for overlap
+    or a
+    cp b
+    jp c,check_for_y_overlap_part_2
+
+    ; If A2 < B1, no overlap
+    jp nz,no_overlap
+
+check_for_y_overlap_part_2:
+
+    ; Head/turn 2 (B2)
+    ld a,l
+    and 0x0f
+    ld b,a
+
+    ; Top of square (A1)
+    ld a,d
+    and 0x0f
+
+    ; If B2 > A1, overlap
+    or a
+    cp b
+    jp c,overlap
+
+    ; If B2 < A1, no overlap
+    jp nz,no_overlap
+
+overlap:
+
+    ; Pop current location in snake history from stack. It is no longer needed.
+    pop hl
+
+    ; Pop snake section counter from stack. It is no longer needed.
+    pop bc
+
+    ; Recover register pairs bc and de, but keep the old values at the top of
+    ; the stack
+    pop bc
+    pop de
+    push de
+    push bc
+
+    ; Cannot divide square (i.e. 1 pixel)
+    ld a,b
+    or b
+    jp z,next_quadrant
+
+    ; Load the location of top-left quadrant to register d
+    ld a,d
+    add a,e
+    ld d,a
+
+    ; Load the location of the bottom-right of the top-left quadrant to
+    ; register b
+    ld a,b
+    add a,0x11
+    rr a
+    ld e,a
+    sub 0x11
+    ld b,a
+
+    ; Load the location of the bottom-left quadrant to register e
+    ld a,e
+    and 0x0f
+    ld e,a
+
+    ; Check quadrants within this quadrant
+    call check_quadrant
+
+    jp next_quadrant
+
+no_overlap:
+
+    ; Pop current location in snake history from stack
+    pop hl
+
+    ; Pop snake section counter from stack
+    pop bc
+
+    ; Check if the next section of snake overlaps this quadrant
+    ld a,b
+    or a
+    jp nz,next_snake_section
+
+    ; Otherwise, add this quadrant to the free squares tables
+
+    ld a,(free_squares_length)
+    ld b,0
+    ld c,a
+
+    ld hl,free_squares_tl
+    add hl,bc
+
+    ld (hl),d
+
+    ld hl,free_squares_br
+    add hl,bc
+
+    ld (hl),e
+
+    inc a
+    ld (free_squares_length),a
+
+next_quadrant:
+
+    ; Pop location of bottom-right of top-left quadrant from the stack
+    pop bc
+
+    ; Pop location of top-left quadrant and bottom-left quadrant from the stack
+    pop de
+
+    ; If top-left or bottom-right quadrant, jump
+    ld a,e
+    or a
+    jp pe,top_left_or_bottom_right
+
+    ; Otherwise, top-right or bottom-left quadrant
+
+    ; If top-right, jump
+    and 0x0f
+    jp z,top_right
+
+    ; Otherwise, bottom-left
+
+    ld a,e
+    sla a
+    sla a
+    sla a
+    sla a
+    or e
+    ld e,a
+
+    jp check_quadrant
+
+top_right:
+
+    ld e,0x00
+
+    jp check_quadrant
+
+top_left_or_bottom_right:
+
+    ; If top-left, jump
+    jp z,top_left
+
+    ; Otherwise, bottom-right
+
+    ld a,e
+    and 0xf0
+    ld e,a
+
+    jp check_quadrant
+
+top_left:
+
+    ld a,d
+    or a
+    jp nz,return_to_parent_quadrant
+    ld a,b
+    cp 0x77
+    jp nz,return_to_parent_quadrant
+
+    jp create_food
+
+return_to_parent_quadrant:
+
+    ret
+
+create_food:
+
+    ld a,(current_food_location)
+    ld (previous_food_location),a
+
+    ; Pick a random free square
+
+    ld a,(free_squares_length)
+    ld b,a
+
+    call rnd
+
+    ld hl,free_squares_tl
+    ld l,a
+    ld d,(hl)
+
+    ld hl,free_squares_br
+    ld l,a
+    ld e,(hl)
+
+    ; Pick a random position within the free square. Ideally, we would reseed
+    ; the random generator (TODO).
+
+    ld a,e
+    sub d
+    ld h,a
+
+    and 0xf0
+    ld b,a
+    call rnd
+    and 0xf0
+    ld c,a
+
+    ld a,h
+    and 0x0f
+    ld b,a
+    call rnd
+    or c
+
+    add a,d
+
+    ld (current_food_location),a
+
+collision_detection:
+
+    ; TODO: More comments for collision detection routine
+
+    ld hl,snake_history
+
+    ; Temporarily store tail offset in register b
+    ld a,(snake_history_tail_offset)
+    ld b,a
+
+    ; Load the head offset to the l register
+    ld a,(snake_history_head_offset)
+    ld l,a
+
+    ; Initialise counter
+    sub b
+    inc a
+    ld b,a
+
+    ; Location of head
+    ld c,(hl)
+
+    ; Loop expects current location in register d
+    ld d,c
+
+    ld a,(snake_direction_current)
+    or a
+    bit 3,a
+    jp nz,neck_to_bottom
+    bit 0,a
+    jp nz,neck_to_left
+    bit 2,a
+    jp nz,neck_to_top
+    
+    ; neck to right
+
+    ld a,d
+
+    add a,0x10
+    jp c,restart_game
+
+    ld d,a
+
+    jp collision_detection_loop
+
+neck_to_bottom:
+
+    ld a,d
+
+    and 0x0f
+    inc a
+    bit 4,a
+    jp nz,restart_game
+
+    ld a,d
+    inc a
+    ld d,a
+
+    jp collision_detection_loop
+
+neck_to_left:
+
+    ld a,d
+
+    sub 0x10
+    jp c,restart_game
+
+    ld d,a
+
+    jp collision_detection_loop
+
+neck_to_top:
+
+    ld a,d
+
+    and 0x0f
+    dec a
+    bit 4,a
+    jp nz,restart_game
+
+    ld a,d
+    dec a
+    ld d,a
+
+collision_detection_loop:
+
+    dec l
+    dec b
+    jp z,update_graphics_init
+
+    ; Push counter to stack
+    push bc
+
+    ; Load previous location to register e
+    ld e,d
+
+    ; Load current location to register d
+    ld d,(hl)
+
+    ld a,c
+    and 0xf0
+    ld b,a
+    ld a,d
+    and 0xf0
+    cp b
+    jp z,on_same_x_axis
+
+    ld a,c
+    and 0x0f
+    ld b,a
+    ld a,d
+    and 0x0f
+    cp b
+    jp z,on_same_y_axis
+
+    jp collision_detection_loop_continue
+
+on_same_x_axis:
+
+    ld a,c
+    and 0x0f
+    ld b,a
+    ld a,d
+    and 0x0f
+    cp b
+    jp c,head_below_current_turn_axis_y
+    jp nz,head_above_current_turn_axis_y
+
+    ; Head at current turn (axis y)
+
+    ; Collision
+    jp restart_game
+
+head_below_current_turn_axis_y:
+
+    ld a,c
+    and 0x0f
+    ld b,a
+    ld a,e
+    and 0x0f
+    cp b
+    jp c,collision_detection_loop_continue
+
+    ; Collision
+    jp restart_game
+
+head_above_current_turn_axis_y:
+
+    ld a,c
+    and 0x0f
+    ld b,a
+    ld a,e
+    and 0x0f
+    cp b
+    jp nc,collision_detection_loop_continue
+
+    ; Collision
+    jp restart_game
+
+on_same_y_axis:
+
+    ld a,c
+    and 0xf0
+    ld b,a
+    ld a,d
+    and 0xf0
+    cp b
+    jp c,head_right_of_current_turn_axis_x
+    jp nz,head_left_of_current_turn_axis_x
+
+    ; Head at current turn (axis x)
+
+    ; Collision
+    jp restart_game
+
+head_left_of_current_turn_axis_x:
+
+    ld a,c
+    and 0xf0
+    ld b,a
+    ld a,e
+    and 0xf0
+    cp b
+    jp nc,collision_detection_loop_continue
+
+    ; Collision
+    jp restart_game
+
+head_right_of_current_turn_axis_x:
+
+    ld a,c
+    and 0xf0
+    ld b,a
+    ld a,e
+    and 0xf0
+    cp b
+    jp c,collision_detection_loop_continue
+
+    ; Collision
+    jp restart_game
+
+collision_detection_loop_continue:
+
+    ; Pop counter from stack
+    pop bc
+    jp collision_detection_loop
+
+collision_detection_loop_end
+
+    ; Pop counter from stack
+    pop bc
+
+update_graphics_init:
+
+    ei
+
+    ; Wait for scan line to reach the end of the screen. This should reduce
+    ; tearing.
+    halt
+
+    di
+
+    ; If grow snake flag is not set, loop 4 times to update grid locations:
+    ; new head, existing head, new tail, existing tail
+
+    ld hl,flags
+    bit 1,(hl)
+    jp z,draw_tail
+
+    ; Otherwise, loop 2 times to update grid locations: new head, existing head
+
+    ld c,3
+    res 1,(hl)
+
+    jp update_graphics
+
+draw_tail:
+
+    ld c,5
+
+update_graphics:
+
+    dec c
+    jp z,update_graphics_end
+
+    pop hl
+
+    ; Load x-coordinate into register b
+    ld a,h
+    and 0xf0
+    srl a
+    srl a
+    srl a
+    srl a
+    add a,8
+    ld d,a
+
+    ; Load y-coordinate into register c
+    ld a,h
+    and 0x0f
+    add a,4
+    ld e,a
+
+    ld h,0x81
+
+    call draw_char
+
+    jp update_graphics
+
+update_graphics_end:
+
+    ; If food eaten flag is not set, jump
+    ld a,(flags)
+    bit 0,a
+    jp z,initiate_input_loop
+
+    ; Otherwise, reset food eaten flag, set grow snake flag ...
+    xor 0x03
+    ld (flags),a
+
+    ; ... and draw new food
+
+    ld a,(current_food_location)
+    ld e,a
+
+    ; Location of food
+    ld hl,0x8178
+
+    ; Column/row
+    and 0xf0
+    srl a
+    srl a
+    srl a
+    srl a
+    add a,8
+    ld d,a
+
+    ld a,e
+    and 0x0f
+    add a,4
+    ld e,a
+
+    call draw_char
+
+    jp initiate_input_loop
+
+; Takes column/row (bc) and pointer (hl) and draws a character to the display
+; buffer
+draw_char:
+
+    ; Get the memory location of the first line of a character
+
+    ; Calculate high byte of display location
+
+    ; The high byte represents the display section and line number (which is added
+    ; later on)
+
+    ld a,e
+
+    ; Discard all but bits 3 and 4. Taken in isolation, these are the offsets for
+    ; the display section, specifically 0x00, 0x08 and 0x10
+    and 0x18 ;
+
+    ; The high byte for the first line of each character is either 0x40, 0x48 or
+    ; 0x50, depending on which section it recides in
+    add a,0x40
+
+    ld b,a
+
+    ; Calculate low byte of display location
+
+    ; The low byte represents row and column numbers
+
+    ld a,e
+
+    ; This calculates the row number grouped by display section, i.e.:
+    ; row 0 = 0x00, row 1 = 0x20, row 7 = 0xE0, row 8 = 0x00, etc.
+    sla a
+    sla a
+    sla a
+    sla a
+    sla a
+
+    ; The first line of each column is offset by a byte
+    add a,d
+
+    ld d,b
+    ld e,a
+
+    ; A character has 8 lines
+    ld b,8
+
+; Draw a character line by line
+draw_line:
+
+    ld a,(hl)
+    ld (de),a
+    inc l
+
+    ; The high byte is incremented to get the destination of the next line
+    inc d
+
+    dec b
+    jp nz,draw_line
+
+    ret
+
+restart_game:
+
+    pop bc
+    jp start
+
+end start
