@@ -9,6 +9,9 @@ the World of Spectrum forums
 Znake was compiled using Pasmo:
 `pasmo --name znake --tapbas znake.z8a znake.tap`
 
+## Controls
+Currently, only the Kempston interface is supported
+
 ## Todo
 * High score
 * Title screen
