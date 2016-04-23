@@ -20,6 +20,8 @@ Currently, only the Kempston interface is supported
 * Game can occasionally restart unexpectedly (i.e. snake seems to collide with
   itself, when it shouldn't)
 * Timing is jerky, especially when the snake eats food
+* Food placement is not particularly random, and due to a quirk in the design,
+  food tends to be placed close to the snake
 
 ## License
 See LICENSE
