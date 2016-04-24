@@ -865,6 +865,21 @@ kempston_joy_hv:
     ; Load last requested direction into accumulator
     ld a,b
 
+    ; If 0 or 1 last requested directions, jump
+
+    jp po,kempston_joy_hv_part_2
+    jp z,kempston_joy_hv_part_2
+
+    ; Otherwise, use the higher bits, as these contain the last requested
+    ; direction
+
+    srl a
+    srl a
+    srl a
+    srl a
+
+kempston_joy_hv_part_2:
+
     ; If last direction requested is not in bitmask, ignore
     and l
     jp z,next_input_loop
