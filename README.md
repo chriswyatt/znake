@@ -22,6 +22,8 @@ Currently, only the Kempston interface is supported
 * Timing is jerky, especially when the snake eats food
 * Food placement is not particularly random, and due to a quirk in the design,
   food tends to be placed close to the snake
+* Game eventually restarts if left unattended (with the game continually
+  restarting). It could be running out of memory due to a stack overflow.
 
 ## License
 See LICENSE
