@@ -685,16 +685,13 @@ next_input_loop:
 ; if the bitmask is left, it could also accept right. This would make the
 ; controls more sensitive at the expense of accidentally turning the snake
 ; in an unintentional direction. This also helps with the ZX Vega D-pad's
-; tendency to lean in a diagonal direction, when the user intended a horizontal
-; direction. We could consider allowing this to be user configurable.
+; tendency to lean in a diagonal direction, when the user intended a
+; horizontal/vertical direction. We could consider allowing this to be user
+; configurable.
 
 ; Using the bit opcode instead of bitmasks would be slightly more efficient
 ; here. We can leave the bitmasks for now, until we are sure this is the
 ; control scheme we want.
-
-; Ideally, the game would 'guess' the intended direction (for diagonal joystick
-; movement only) if the snake was about to crash, but this would be rather
-; tricky to implement.
 
 kempston_joy_up_right:
 
@@ -882,6 +879,7 @@ kempston_joy_hv:
 
     ; If 0 or 1 last requested directions, jump
 
+    or a
     jp po,kempston_joy_hv_part_2
     jp z,kempston_joy_hv_part_2
 
