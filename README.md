@@ -22,6 +22,7 @@ Currently, only the Kempston interface is supported
   food tends to be placed close to the snake
 * ZX Spectrum eventually resets if left unattended (with the game
   continually restarting)
+* Snake head can pass through the tip of its tail
 
 ## License
 See LICENSE
