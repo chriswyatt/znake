@@ -301,7 +301,7 @@ rotate_rnd_num:
     rl a
 
     dec c
-    jp nz,rotate_rnd_num
+    jr nz,rotate_rnd_num
 
     ld h,a
 
@@ -332,13 +332,13 @@ rotate_rnd_num:
     cp b
 
     ; If within range, jump out of loop
-    jp c,rnd_end
+    jr c,rnd_end
 
 rnd_loop:
 
     sla a
     cp b
-    jp nc,rnd_loop
+    jr nc,rnd_loop
 
 rnd_end:
 
@@ -1754,9 +1754,6 @@ check_quadrant:
 
 next_snake_section:
 
-    ; Decrement counter
-    dec b
-
     ; Load first turn or head location to register c
     ld a,(hl)
     ld c,a
@@ -1774,7 +1771,7 @@ next_snake_section:
 
     ; If the snake is going left or up, jump
     cp c
-    jp c,negative_direction
+    jr c,negative_direction
 
     ; Otherwise, the snake is going right or down
 
@@ -1801,10 +1798,10 @@ check_for_x_overlap:
 
     ; If A2 > B1, continue checking for overlap
     cp c
-    jp c,check_for_x_overlap_part_2
+    jr c,check_for_x_overlap_part_2
 
     ; If A2 < B1, no overlap
-    jp nz,no_overlap
+    jr nz,no_overlap
 
 check_for_x_overlap_part_2:
 
@@ -1819,10 +1816,10 @@ check_for_x_overlap_part_2:
 
     ; If B2 > A1, continue checking for overlap
     cp c
-    jp c,check_for_y_overlap
+    jr c,check_for_y_overlap
 
     ; If B2 < A1, no overlap
-    jp nz,no_overlap
+    jr nz,no_overlap
 
 check_for_y_overlap:
 
@@ -1837,10 +1834,10 @@ check_for_y_overlap:
 
     ; If A2 > B1, continue checking for overlap
     cp c
-    jp c,check_for_y_overlap_part_2
+    jr c,check_for_y_overlap_part_2
 
     ; If A2 < B1, no overlap
-    jp nz,no_overlap
+    jr nz,no_overlap
 
 check_for_y_overlap_part_2:
 
@@ -1855,10 +1852,10 @@ check_for_y_overlap_part_2:
 
     ; If B2 > A1, overlap
     cp c
-    jp c,overlap
+    jr c,overlap
 
     ; If B2 < A1, no overlap
-    jp nz,no_overlap
+    jr nz,no_overlap
 
 overlap:
 
@@ -1866,13 +1863,13 @@ overlap:
     ld b,a
 
     ; Cannot divide square (i.e. 1 pixel)
-    ld a,b
-    or b
-    jp z,next_quadrant
+    or a
+    jr z,next_quadrant
 
     ; Keep the old value of de at the top of the stack
     pop de
-    push de
+    dec sp
+    dec sp
 
     ; Load the location of top-left quadrant to register d
     ld a,d
@@ -1905,9 +1902,7 @@ no_overlap:
     ld l,a
 
     ; Check if the next section of snake overlaps this quadrant
-    ld a,b
-    or a
-    jp nz,next_snake_section
+    djnz next_snake_section
 
     ; Otherwise, add this quadrant to the free squares tables
 
@@ -1945,7 +1940,7 @@ next_quadrant:
 
     ; If top-right, jump
     and 0x0f
-    jp z,top_right
+    jr z,top_right
 
     ; Otherwise, bottom-left
 
@@ -1968,7 +1963,7 @@ top_right:
 top_left_or_bottom_right:
 
     ; If top-left, jump
-    jp z,top_left
+    jr z,top_left
 
     ; Otherwise, bottom-right
 
@@ -1982,12 +1977,12 @@ top_left:
 
     ld a,d
     or a
-    jp nz,return_to_parent_quadrant
+    jr nz,return_to_parent_quadrant
     ld a,b
     cp 0x77
-    jp nz,return_to_parent_quadrant
+    jr nz,return_to_parent_quadrant
 
-    jp create_food
+    jr create_food
 
 return_to_parent_quadrant:
 
