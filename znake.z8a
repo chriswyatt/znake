@@ -352,7 +352,7 @@ start:
     halt
 
     ; Set border color to black
-    ld a,0
+    xor a ; a = 0
     call $229B
 
     halt
@@ -375,8 +375,7 @@ draw_top_border:
     ld hl,0x8180
 
     ; Column/row
-    ld d,8
-    ld e,3
+    ld de,0x0803
 
 draw_top_border_next:
 
@@ -400,8 +399,7 @@ draw_right_border:
     ld hl,0x8188
 
     ; Column/row
-    ld d,24
-    ld e,4
+    ld de,0x1804
 
 draw_right_border_next:
 
@@ -425,8 +423,7 @@ draw_bottom_border:
     ld hl,0x8190
 
     ; Column/row
-    ld d,8
-    ld e,20
+    ld de,0x0814
 
 draw_bottom_border_next:
 
@@ -450,8 +447,7 @@ draw_left_border:
     ld hl,0x8198
 
     ; Column/row
-    ld d,7
-    ld e,4
+    ld de,0x0704
 
 draw_left_border_next:
 
@@ -471,8 +467,7 @@ draw_left_border_next:
     ld hl,0x81a0
 
     ; Column/row
-    ld d,24
-    ld e,3
+    ld de,0x1803
 
     call draw_char
 
@@ -480,8 +475,7 @@ draw_left_border_next:
     ld hl,0x81a8
 
     ; Column/row
-    ld d,24
-    ld e,20
+    ld de,0x1814
 
     call draw_char
 
@@ -489,8 +483,7 @@ draw_left_border_next:
     ld hl,0x81b0
 
     ; Column/row
-    ld d,7
-    ld e,20
+    ld de,0x0714
 
     call draw_char
 
@@ -498,14 +491,13 @@ draw_left_border_next:
     ld hl,0x81b8
 
     ; Column/row
-    ld d,7
-    ld e,3
+    ld de,0x0703
 
     call draw_char
 
     ; Initialise snake
 
-    ld a,0x00
+    xor a ; a = 0x00
     ld (snake_history_tail_offset),a
     ld a,0x01
     ld (snake_history_head_offset),a
@@ -522,8 +514,7 @@ draw_left_border_next:
     ld hl,0x8120
 
     ; Column/row
-    ld d,14 ; 6 + 8
-    ld e,11 ; 7 + 4
+    ld de,0x0e0b ; 6 + 8, 7 + 4
 
     call draw_char
 
@@ -531,8 +522,7 @@ draw_left_border_next:
     ld hl,0x8130
 
     ; Column/row
-    ld d,15 ; 7 + 8
-    ld e,11 ; 7 + 4
+    ld de,0x0f0b ; 7 + 8, 7 + 4
 
     call draw_char
 
@@ -540,8 +530,7 @@ draw_left_border_next:
     ld hl,0x8160
 
     ; Column/row
-    ld d,16 ; 8 + 8
-    ld e,11 ; 7 + 4
+    ld de,0x100b ; 8 + 8, 7 + 4
 
     call draw_char
 
@@ -830,41 +819,29 @@ queue_diag_end_loop:
 
 kempston_joy_up:
 
-    ; Direction requested
-    ld h,0x08
-
-    ; Bitmask for left and right
-    ld l,0x03
+    ; Direction requested, bitmask for left and right
+    ld hl,0x0803
 
     jp kempston_joy_hv
 
 kempston_joy_right:
 
-    ; Direction requested
-    ld h,0x01
-
-    ; Bitmask for up and down
-    ld l,0x0c
+    ; Direction requested, bitmask for up and down
+    ld hl,0x010c
 
     jp kempston_joy_hv
 
 kempston_joy_down:
 
-    ; Direction requested
-    ld h,0x04
-
-    ; Bitmask for left and right
-    ld l,0x03
+    ; Direction requested, bitmask for left and right
+    ld hl,0x0403
 
     jp kempston_joy_hv
 
 kempston_joy_left:
 
-    ; Direction requested
-    ld h,0x02
-
-    ; Bitmask for up and down
-    ld l,0x0c
+    ; Direction requested, bitmask for up and down
+    ld hl,0x020c
 
 ; Deal with queuing horizontal/vertical direction requests
 kempston_joy_hv:
@@ -1113,33 +1090,33 @@ chop_off_tail:
     ; Move pointer to the turn after the new tail
     inc l
 
-    ; Load new turn location to register b
-    ld b,(hl)
+    ; Subtract tail location from turn location
+    ld a,(hl)
+    sub e
+    
+    ; Load result and flags to bc
+    push af
+    pop bc
+    
+    ; Load flags to register a
+    ld a,c
+    
+    ; If half carry
+    bit 4,a
+    jp nz,new_tail_moving_up
 
-    ; If turn X minus tail X is not zero, we know the snake is moving in that
-    ; axis
-    ld a,e
-    and 0xf0
-    ld c,a
+    ; If carry
+    bit 0,a
+    jp nz,new_tail_moving_left
+    
+    ; Load result to register a
     ld a,b
-    and 0xf0
-    sub c
-    jp nz,new_tail_moving_horizontally
 
-    ; Otherwise the tail must be moving vertically. We use the carry flag to
-    ; check if it's moving in a negative direction (i.e. up).
-    ld a,e
-    and 0x0f
-    ld c,a
-    ld a,b
-    and 0x0f
-    sub c
-    jp c,new_tail_moving_up
-    jp new_tail_moving_down
+    ; If result > 16 (i.e. high bits activated) then jump
+    cp 0x10
+    jp c,new_tail_moving_down
 
-new_tail_moving_horizontally:
-
-    jp c,new_tail_moving_left
+    ; Otherwise, tail must be moving right
     jp new_tail_moving_right
 
 new_tail_moving_up:
@@ -1735,7 +1712,7 @@ check_food_eaten:
     ; ... and calculate new food location
 
     ; Initialise tables
-    ld a,0
+    xor a ; a = 0
     ld (free_squares_length),a
 
     ; Location of top-left quadrant
