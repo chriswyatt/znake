@@ -1727,6 +1727,7 @@ check_quadrants:
 check_quadrant:
 
     push de
+    push bc
 
     ; Set register d to the location of the top-left corner
     ld a,d
@@ -1737,8 +1738,6 @@ check_quadrant:
     ld a,d
     add a,b
     ld e,a
-
-    push bc
 
     ld hl,snake_history
 
@@ -1860,17 +1859,20 @@ check_for_y_overlap_part_2:
 
 overlap:
 
-    ; Recover register pairs bc and de, but keep the old values at the top of
-    ; the stack
     pop bc
-    pop de
-    push de
-    push bc
 
     ; Cannot divide square (i.e. 1 pixel)
     ld a,b
     or b
-    jp z,next_quadrant
+    jp z,next_quadrant_without_pop_bc
+
+    pop de
+
+    ; Keep the old value of de at the top of the stack
+    push de
+    
+    ; Keep the old value of bc at the top of the stack
+    push bc
 
     ; Load the location of top-left quadrant to register d
     ld a,d
@@ -1930,6 +1932,8 @@ next_quadrant:
 
     ; Pop location of bottom-right of top-left quadrant from the stack
     pop bc
+
+next_quadrant_without_pop_bc:
 
     ; Pop location of top-left quadrant and bottom-left quadrant from the stack
     pop de
