@@ -328,7 +328,7 @@ rotate_rnd_num:
     jp c,rnd_end
 
     ; Otherwise, try and xor with upper limit
-    xor 0xff
+    xor b
 
     ; Compare the result to the upper limit
     cp b
@@ -907,7 +907,7 @@ update_current_direction:
     ; If direction not queued, jump
     ld a,e
     and 0x0f
-    jp z,update_tail_history
+    jp z,update_head_history
 
     ld d,a
 
@@ -918,7 +918,7 @@ update_current_direction:
     srl a
     ld e,a
 
-update_tail_history:
+update_head_history:
 
     ; We need to free up these registers now
 
@@ -927,247 +927,6 @@ update_tail_history:
 
     ld a,e
     ld (snake_direction_queue),a
-
-    ; If the snake has been requested to grow, do not update tail
-    ld hl,flags
-    bit 1,(hl)
-    jp nz,update_head_history
-
-    ; Move pointer to start of snake history
-    ld hl,snake_history
-    ld a,(snake_history_tail_offset)
-    ld l,a
-
-    ; Load current tail location to register b
-    ld d,(hl)
-
-    ; Low bit of graphics (blank)
-    ld e,0x00
-
-    ; Draw later
-    push de
-
-    ; Move pointer to turn (or head) before tail
-    inc l
-
-    ; Load current turn location to register e
-    ld e,(hl)
-
-    ; Subtract tail location from turn location
-    ld a,e
-    sub d
-
-    ; Load result and flags to bc
-    push af
-    pop bc
-
-    ; Load flags to register a
-    ld a,c
-
-    ; If half carry
-    bit 4,a
-    jp nz,tail_moving_up
-
-    ; If carry
-    bit 0,a
-    jp nz,tail_moving_left
-
-    ; Load result to register a
-    ld a,b
-
-    ; If tail moved down one
-    cp 0x01
-    jp z,chop_off_tail
-
-    ; If tail moved right one
-    cp 0x10
-    jp z,chop_off_tail
-
-    ; If result > 16 (i.e. high bits activated) then jump
-    jp c,tail_moving_down
-
-    ; Otherwise, tail must be moving right
-    jp tail_moving_right
-
-tail_moving_up:
-
-    ; If the distance from turn to tail is -1, chop off the tail and let the
-    ; turn become the new tail. It's gruesome, but it works.
-    ld a,b
-    cp 0xff
-    jp z,chop_off_tail
-
-    ; Shift location up
-    dec d
-
-    ; Low bit of graphics
-    ld e,0x68
-
-    ; Draw later
-    push de
-
-    ; Move pointer back to tail
-    dec l
-
-    ; And update the existing tail location in our table
-    ld (hl),d
-
-    jp update_head_history
-
-tail_moving_right:
-
-    ; Get tail location again and shift it right
-    ld a,d
-    add a,0x10
-    ld d,a
-
-    ; Low bit of graphics
-    ld e,0x70
-
-    ; Draw later
-    push de
-
-    ; Otherwise, move pointer back to tail
-    dec l
-
-    ; And update the existing tail location in our table
-    ld (hl),d
-
-    jp update_head_history
-
-tail_moving_left:
-
-    ; If the distance from turn to tail is -1, chop off the tail and let the
-    ; turn become the new tail. It's gruesome, but it works.
-    ld a,b
-    cp 0xf0
-    jp z,chop_off_tail
-
-    ; Get tail location again and shift it left
-    ld a,d
-    sub 0x10
-    ld d,a
-
-    ; Low bit of graphics
-    ld e,0x60
-
-    ; Draw later
-    push de
-
-    ; Otherwise, move pointer back to tail
-    dec l
-
-    ; And update the existing tail location in our table
-    ld (hl),d
-
-    jp update_head_history
-
-tail_moving_down:
-
-    ; Shift location down
-    inc d
-
-    ; Low bit of graphics
-    ld e,0x58
-
-    ; Draw later
-    push de
-
-    ; Otherwise, move pointer back to tail
-    dec l
-
-    ; And update the existing tail location in our table
-    ld (hl),d
-
-    jp update_head_history
-
-chop_off_tail:
-
-    ; Remove the reference to the old tail, and let the next turn in the
-    ; snake's body be the new tail
-    ld a,(snake_history_tail_offset)
-    inc a
-    ld (snake_history_tail_offset),a
-
-    ; Move pointer to the turn after the new tail
-    inc l
-
-    ; Subtract tail location from turn location
-    ld a,(hl)
-    sub e
-
-    ; Load result and flags to bc
-    push af
-    pop bc
-
-    ; Load flags to register a
-    ld a,c
-
-    ; If half carry
-    bit 4,a
-    jp nz,new_tail_moving_up
-
-    ; If carry
-    bit 0,a
-    jp nz,new_tail_moving_left
-
-    ; Load result to register a
-    ld a,b
-
-    ; If result > 16 (i.e. high bits activated) then jump
-    cp 0x10
-    jp c,new_tail_moving_down
-
-    ; Otherwise, tail must be moving right
-    jp new_tail_moving_right
-
-new_tail_moving_up:
-
-    ld d,e
-
-    ; Low bit of graphics
-    ld e,0x68
-
-    ; Draw later
-    push de
-
-    jp update_head_history
-
-new_tail_moving_right:
-
-    ld d,e
-
-    ; Low bit of graphics
-    ld e,0x70
-
-    ; Draw later
-    push de
-
-    jp update_head_history
-
-new_tail_moving_down:
-
-    ld d,e
-
-    ; Low bit of graphics
-    ld e,0x58
-
-    ; Draw later
-    push de
-
-    jp update_head_history
-
-new_tail_moving_left:
-
-    ld d,e
-
-    ; Low bit of graphics
-    ld e,0x60
-
-    ; Draw later
-    push de
-
-update_head_history:
 
     ; Move pointer to end of snake history
 
@@ -1264,7 +1023,7 @@ head_moving_up:
     ; Update the existing head location in our table
     ld (hl),a
 
-    jp check_food_eaten
+    jp update_tail_history
 
 head_moving_right:
 
@@ -1308,7 +1067,7 @@ head_moving_right:
     ; Draw later
     push bc
 
-    jp check_food_eaten
+    jp update_tail_history
 
 head_moving_down:
 
@@ -1358,7 +1117,7 @@ head_moving_down:
     ; Update the existing head location in our table
     ld (hl),a
 
-    jp check_food_eaten
+    jp update_tail_history
 
 head_moving_left:
 
@@ -1402,7 +1161,7 @@ head_moving_left:
     ; Draw later
     push bc
 
-    jp check_food_eaten
+    jp update_tail_history
 
 head_turning_up_right:
 
@@ -1435,7 +1194,7 @@ head_turning_up_right:
     inc a
     ld (snake_history_head_offset),a
 
-    jp check_food_eaten
+    jp update_tail_history
 
 head_turning_right_up:
 
@@ -1474,7 +1233,7 @@ head_turning_right_up:
     inc a
     ld (snake_history_head_offset),a
 
-    jp check_food_eaten
+    jp update_tail_history
 
 head_turning_right_down:
 
@@ -1514,7 +1273,7 @@ head_turning_right_down:
     inc a
     ld (snake_history_head_offset),a
 
-    jp check_food_eaten
+    jp update_tail_history
 
 head_turning_down_right:
 
@@ -1547,7 +1306,7 @@ head_turning_down_right:
     inc a
     ld (snake_history_head_offset),a
 
-    jp check_food_eaten
+    jp update_tail_history
 
 head_turning_down_left:
 
@@ -1580,7 +1339,7 @@ head_turning_down_left:
     inc a
     ld (snake_history_head_offset),a
 
-    jp check_food_eaten
+    jp update_tail_history
 
 head_turning_left_down:
 
@@ -1619,7 +1378,7 @@ head_turning_left_down:
     inc a
     ld (snake_history_head_offset),a
 
-    jp check_food_eaten
+    jp update_tail_history
 
 head_turning_left_up:
 
@@ -1659,7 +1418,7 @@ head_turning_left_up:
     inc a
     ld (snake_history_head_offset),a
 
-    jp check_food_eaten
+    jp update_tail_history
 
 head_turning_up_left:
 
@@ -1692,6 +1451,247 @@ head_turning_up_left:
     inc a
     ld (snake_history_head_offset),a
 
+update_tail_history:
+
+    ; If the snake has been requested to grow, do not update tail
+    ld hl,flags
+    bit 1,(hl)
+    jp nz,check_food_eaten
+
+    ; Move pointer to start of snake history
+    ld hl,snake_history
+    ld a,(snake_history_tail_offset)
+    ld l,a
+
+    ; Load current tail location to register b
+    ld d,(hl)
+
+    ; Low bit of graphics (blank)
+    ld e,0x00
+
+    ; Draw later
+    push de
+
+    ; Move pointer to turn (or head) before tail
+    inc l
+
+    ; Load current turn location to register e
+    ld e,(hl)
+
+    ; Subtract tail location from turn location
+    ld a,e
+    sub d
+
+    ; Load result and flags to bc
+    push af
+    pop bc
+
+    ; Load flags to register a
+    ld a,c
+
+    ; If half carry
+    bit 4,a
+    jp nz,tail_moving_up
+
+    ; If carry
+    bit 0,a
+    jp nz,tail_moving_left
+
+    ; Load result to register a
+    ld a,b
+
+    ; If tail moved down one
+    cp 0x01
+    jp z,chop_off_tail
+
+    ; If tail moved right one
+    cp 0x10
+    jp z,chop_off_tail
+
+    ; If result > 16 (i.e. high bits activated) then jump
+    jp c,tail_moving_down
+
+    ; Otherwise, tail must be moving right
+    jp tail_moving_right
+
+tail_moving_up:
+
+    ; If the distance from turn to tail is -1, chop off the tail and let the
+    ; turn become the new tail. It's gruesome, but it works.
+    ld a,b
+    cp 0xff
+    jp z,chop_off_tail
+
+    ; Shift location up
+    dec d
+
+    ; Low bit of graphics
+    ld e,0x68
+
+    ; Draw later
+    push de
+
+    ; Move pointer back to tail
+    dec l
+
+    ; And update the existing tail location in our table
+    ld (hl),d
+
+    jp check_food_eaten
+
+tail_moving_right:
+
+    ; Get tail location again and shift it right
+    ld a,d
+    add a,0x10
+    ld d,a
+
+    ; Low bit of graphics
+    ld e,0x70
+
+    ; Draw later
+    push de
+
+    ; Otherwise, move pointer back to tail
+    dec l
+
+    ; And update the existing tail location in our table
+    ld (hl),d
+
+    jp check_food_eaten
+
+tail_moving_left:
+
+    ; If the distance from turn to tail is -1, chop off the tail and let the
+    ; turn become the new tail. It's gruesome, but it works.
+    ld a,b
+    cp 0xf0
+    jp z,chop_off_tail
+
+    ; Get tail location again and shift it left
+    ld a,d
+    sub 0x10
+    ld d,a
+
+    ; Low bit of graphics
+    ld e,0x60
+
+    ; Draw later
+    push de
+
+    ; Otherwise, move pointer back to tail
+    dec l
+
+    ; And update the existing tail location in our table
+    ld (hl),d
+
+    jp check_food_eaten
+
+tail_moving_down:
+
+    ; Shift location down
+    inc d
+
+    ; Low bit of graphics
+    ld e,0x58
+
+    ; Draw later
+    push de
+
+    ; Otherwise, move pointer back to tail
+    dec l
+
+    ; And update the existing tail location in our table
+    ld (hl),d
+
+    jp check_food_eaten
+
+chop_off_tail:
+
+    ; Remove the reference to the old tail, and let the next turn in the
+    ; snake's body be the new tail
+    ld a,(snake_history_tail_offset)
+    inc a
+    ld (snake_history_tail_offset),a
+
+    ; Move pointer to the turn after the new tail
+    inc l
+
+    ; Subtract tail location from turn location
+    ld a,(hl)
+    sub e
+
+    ; Load result and flags to bc
+    push af
+    pop bc
+
+    ; Load flags to register a
+    ld a,c
+
+    ; If half carry
+    bit 4,a
+    jp nz,new_tail_moving_up
+
+    ; If carry
+    bit 0,a
+    jp nz,new_tail_moving_left
+
+    ; Load result to register a
+    ld a,b
+
+    ; If result > 16 (i.e. high bits activated) then jump
+    cp 0x10
+    jp c,new_tail_moving_down
+
+    ; Otherwise, tail must be moving right
+    jp new_tail_moving_right
+
+new_tail_moving_up:
+
+    ld d,e
+
+    ; Low bit of graphics
+    ld e,0x68
+
+    ; Draw later
+    push de
+
+    jp check_food_eaten
+
+new_tail_moving_right:
+
+    ld d,e
+
+    ; Low bit of graphics
+    ld e,0x70
+
+    ; Draw later
+    push de
+
+    jp check_food_eaten
+
+new_tail_moving_down:
+
+    ld d,e
+
+    ; Low bit of graphics
+    ld e,0x58
+
+    ; Draw later
+    push de
+
+    jp check_food_eaten
+
+new_tail_moving_left:
+
+    ld d,e
+
+    ; Low bit of graphics
+    ld e,0x60
+
+    ; Draw later
+    push de
+
 ; The following routine finds free space that is not occupied by the snake, and
 ; places new food in this free space. It divides the map into 4 quadrants
 ; (TR, BR, BL, TL); any quadrant that does not contain snake is added to the
@@ -1700,6 +1700,8 @@ head_turning_up_left:
 
 check_food_eaten:
 
+    ld a,(snake_history_head_offset)
+    ld l,a
     ld a,(current_food_location)
     cp (hl)
 
