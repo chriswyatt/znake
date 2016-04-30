@@ -571,7 +571,7 @@ initiate_input_loop:
     ld e,a
 
     ; Number of times to loop through input routine, before we move the snake
-    ld bc,1000
+    ld bc,1500
 
 input_loop:
 
@@ -1761,9 +1761,11 @@ next_snake_section:
 
     ; Load second turn or tail location to register a
     inc l
-    ld a,(hl)
 
-    push hl
+    ld a,l
+    ex af,af'
+
+    ld a,(hl)
 
     ; We need to take the lower location from the higher location; thus, we
     ; need to sort them first.
@@ -1858,9 +1860,6 @@ check_for_y_overlap_part_2:
 
 overlap:
 
-    ; Pop current location in snake history from stack. It is no longer needed.
-    pop hl
-
     ; Recover register pairs bc and de, but keep the old values at the top of
     ; the stack
     pop bc
@@ -1899,8 +1898,9 @@ overlap:
 
 no_overlap:
 
-    ; Pop current location in snake history from stack
-    pop hl
+    ld hl,snake_history
+    ex af,af'
+    ld l,a
 
     ; Check if the next section of snake overlaps this quadrant
     ld a,b
