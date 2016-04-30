@@ -211,6 +211,8 @@ free_squares_tl:
     db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
     db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
 
+org 0x8300
+
 free_squares_br:
 
     db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
@@ -1893,36 +1895,6 @@ overlap:
     ; Check quadrants within this quadrant
     call check_quadrant
 
-    jp next_quadrant
-
-no_overlap:
-
-    ld hl,snake_history
-    ex af,af'
-    ld l,a
-
-    ; Check if the next section of snake overlaps this quadrant
-    djnz next_snake_section
-
-    ; Otherwise, add this quadrant to the free squares tables
-
-    ld a,(free_squares_length)
-    ld b,0
-    ld c,a
-
-    ld hl,free_squares_tl
-    add hl,bc
-
-    ld (hl),d
-
-    ld hl,free_squares_br
-    add hl,bc
-
-    ld (hl),e
-
-    inc a
-    ld (free_squares_length),a
-
 next_quadrant:
 
     ; Pop location of top-left quadrant and bottom-left quadrant from the stack
@@ -1933,6 +1905,7 @@ next_quadrant:
 
     ; If top-left or bottom-right quadrant, jump
     ld a,e
+
     or a
     jp pe,top_left_or_bottom_right
 
@@ -1953,6 +1926,33 @@ next_quadrant:
     ld e,a
 
     jp check_quadrant
+
+no_overlap:
+
+    ld hl,snake_history
+    ex af,af'
+    ld l,a
+
+    ; Check if the next section of snake overlaps this quadrant
+    djnz next_snake_section
+
+    ; Otherwise, add this quadrant to the free squares tables
+
+    ld a,(free_squares_length)
+    ld l,a
+
+    ld h,(free_squares_tl >> 8) & $FF
+
+    ld (hl),d
+
+    ld h,(free_squares_br >> 8) & $FF
+
+    ld (hl),e
+
+    inc a
+    ld (free_squares_length),a
+
+    jp next_quadrant
 
 top_right:
 
@@ -1999,13 +1999,12 @@ create_food:
     ld b,a
 
     call rnd
-
-    ld hl,free_squares_tl
     ld l,a
+
+    ld h,(free_squares_tl >> 8) & $FF
     ld d,(hl)
 
-    ld hl,free_squares_br
-    ld l,a
+    ld h,(free_squares_br >> 8) & $FF
     ld e,(hl)
 
     ; Pick a random position within the free square. Ideally, we would reseed
