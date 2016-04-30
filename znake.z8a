@@ -327,7 +327,7 @@ rotate_rnd_num:
 
     ; Otherwise, try and xor with upper limit
     xor 0xff
-    
+
     ; Compare the result to the upper limit
     cp b
 
@@ -546,10 +546,10 @@ draw_left_border_next:
 
     ; Column/row
     and 0xf0
-    srl a
-    srl a
-    srl a
-    srl a
+    rr a
+    rr a
+    rr a
+    rr a
     add a,8
     ld d,a
 
@@ -1093,14 +1093,14 @@ chop_off_tail:
     ; Subtract tail location from turn location
     ld a,(hl)
     sub e
-    
+
     ; Load result and flags to bc
     push af
     pop bc
-    
+
     ; Load flags to register a
     ld a,c
-    
+
     ; If half carry
     bit 4,a
     jp nz,new_tail_moving_up
@@ -1108,7 +1108,7 @@ chop_off_tail:
     ; If carry
     bit 0,a
     jp nz,new_tail_moving_left
-    
+
     ; Load result to register a
     ld a,b
 
@@ -1715,23 +1715,14 @@ check_food_eaten:
     xor a ; a = 0
     ld (free_squares_length),a
 
-    ; Location of top-left quadrant
-    ld d,0x00
-
-    ; Offset to bottom-left quadrant / width / height
-    ld e,0x08
+    ; High bits: location of top-left quadrant
+    ; Low bits: offset to bottom-left quadrant / width / height
+    ld de,0x0008
 
 check_quadrants:
 
     ; Load bottom-right of top-left quadrant to register b
-    ld a,e
-    sla a
-    sla a
-    sla a
-    sla a
-    or e
-    sub 0x11
-    ld b,a
+    ld b,0x77
 
 check_quadrant:
 
@@ -1764,11 +1755,9 @@ next_snake_section:
     ; Decrement counter
     dec b
 
-    push bc
-
-    ; Load first turn or head location to register b
+    ; Load first turn or head location to register c
     ld a,(hl)
-    ld b,a
+    ld c,a
 
     ; Load second turn or tail location to register a
     inc l
@@ -1780,12 +1769,12 @@ next_snake_section:
     ; need to sort them first.
 
     ; If the snake is going left or up, jump
-    cp b
+    cp c
     jp c,negative_direction
 
     ; Otherwise, the snake is going right or down
 
-    ld h,b
+    ld h,c
     ld l,a
 
     jp check_for_x_overlap
@@ -1793,22 +1782,21 @@ next_snake_section:
 negative_direction:
 
     ld h,a
-    ld l,b
+    ld l,c
 
 check_for_x_overlap:
 
     ; Right of square (A2)
     ld a,e
     and 0xf0
-    ld b,a
+    ld c,a
 
     ; Tail/turn 1 (B1)
     ld a,h
     and 0xf0
 
     ; If A2 > B1, continue checking for overlap
-    or a
-    cp b
+    cp c
     jp c,check_for_x_overlap_part_2
 
     ; If A2 < B1, no overlap
@@ -1819,15 +1807,14 @@ check_for_x_overlap_part_2:
     ; Head/turn 2 (B2)
     ld a,l
     and 0xf0
-    ld b,a
+    ld c,a
 
     ; Left of square (A1)
     ld a,d
     and 0xf0
 
     ; If B2 > A1, continue checking for overlap
-    or a
-    cp b
+    cp c
     jp c,check_for_y_overlap
 
     ; If B2 < A1, no overlap
@@ -1838,15 +1825,14 @@ check_for_y_overlap:
     ; Bottom of square (A2)
     ld a,e
     and 0x0f
-    ld b,a
+    ld c,a
 
     ; Tail/turn 1 (B1)
     ld a,h
     and 0x0f
 
     ; If A2 > B1, continue checking for overlap
-    or a
-    cp b
+    cp c
     jp c,check_for_y_overlap_part_2
 
     ; If A2 < B1, no overlap
@@ -1857,15 +1843,14 @@ check_for_y_overlap_part_2:
     ; Head/turn 2 (B2)
     ld a,l
     and 0x0f
-    ld b,a
+    ld c,a
 
     ; Top of square (A1)
     ld a,d
     and 0x0f
 
     ; If B2 > A1, overlap
-    or a
-    cp b
+    cp c
     jp c,overlap
 
     ; If B2 < A1, no overlap
@@ -1875,9 +1860,6 @@ overlap:
 
     ; Pop current location in snake history from stack. It is no longer needed.
     pop hl
-
-    ; Pop snake section counter from stack. It is no longer needed.
-    pop bc
 
     ; Recover register pairs bc and de, but keep the old values at the top of
     ; the stack
@@ -1919,9 +1901,6 @@ no_overlap:
 
     ; Pop current location in snake history from stack
     pop hl
-
-    ; Pop snake section counter from stack
-    pop bc
 
     ; Check if the next section of snake overlaps this quadrant
     ld a,b
@@ -1969,10 +1948,10 @@ next_quadrant:
     ; Otherwise, bottom-left
 
     ld a,e
-    sla a
-    sla a
-    sla a
-    sla a
+    rl a
+    rl a
+    rl a
+    rl a
     or e
     ld e,a
 
@@ -2088,7 +2067,7 @@ collision_detection:
     jp nz,neck_to_left
     bit 2,a
     jp nz,neck_to_top
-    
+
     ; neck to right
 
     ld a,d
