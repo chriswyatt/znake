@@ -674,12 +674,7 @@ read_kempston_hv:
     and 0x0f
     ld e,a
 
-next_input_loop:
-
-    ; Pop input routine loop count back from the stack
-    pop bc
-
-    jp input_loop
+    jp next_input_loop
 
 ; The following bitmasks could also allow the opposite directions too, e.g.
 ; if the bitmask is left, it could also accept right. This would make the
@@ -919,7 +914,12 @@ replace_direction_queue:
 
     ld e,h
 
-    jp next_input_loop
+next_input_loop:
+
+    ; Pop input routine loop count back from the stack
+    pop bc
+
+    jp input_loop
 
 update_current_direction:
 
@@ -960,106 +960,99 @@ update_tail_history:
     ld l,a
 
     ; Load current tail location to register b
-    ld b,(hl)
+    ld d,(hl)
 
     ; Low bit of graphics (blank)
-    ld c,0x00
+    ld e,0x00
 
     ; Draw later
-    push bc
+    push de
 
     ; Move pointer to turn (or head) before tail
     inc l
 
-    ; Load current turn location to register d
-    ld d,(hl)
+    ; Load current turn location to register e
+    ld e,(hl)
 
-    ; If turn X minus tail X is not zero, we know the snake is moving in that
-    ; axis
+    ; Subtract tail location from turn location
+    ld a,e
+    sub d
+
+    ; Load result and flags to bc
+    push af
+    pop bc
+
+    ; Load flags to register a
+    ld a,c
+
+    ; If half carry
+    bit 4,a
+    jp nz,tail_moving_up
+
+    ; If carry
+    bit 0,a
+    jp nz,tail_moving_left
+
+    ; Load result to register a
     ld a,b
-    and 0xf0
-    ld c,a
-    ld a,d
-    and 0xf0
-    sub c
-    jp nz,tail_moving_horizontally
 
-    ; Otherwise the tail must be moving vertically. We use the carry flag to
-    ; check if it's moving in a negative direction (i.e. up).
-    ld a,b
-    and 0x0f
-    ld c,a
-    ld a,d
-    and 0x0f
-    sub c
-    jp c,tail_moving_up
-    jp tail_moving_down
+    ; If tail moved down one
+    cp 0x01
+    jp z,chop_off_tail
 
-tail_moving_horizontally:
+    ; If tail moved right one
+    cp 0x10
+    jp z,chop_off_tail
 
-    jp c,tail_moving_left
+    ; If result > 16 (i.e. high bits activated) then jump
+    jp c,tail_moving_down
+
+    ; Otherwise, tail must be moving right
     jp tail_moving_right
 
 tail_moving_up:
 
     ; If the distance from turn to tail is -1, chop off the tail and let the
     ; turn become the new tail. It's gruesome, but it works.
-    and 0x0f
-    cp 0x0f
+    ld a,b
+    cp 0xff
     jp z,chop_off_tail
 
-    ; Get tail location again and calculate the new Y value
-    ld a,b
-    and 0x0f
-    dec a
-
-    ; OR high (X) and low (Y) bits together, with the existing value of X and
-    ; the updated value of Y
-    ld c,a
-    ld a,b
-    and 0xf0
-    or c
-    ld b,a
+    ; Shift location up
+    dec d
 
     ; Low bit of graphics
-    ld c,0x68
+    ld e,0x68
 
     ; Draw later
-    push bc
+    push de
 
     ; Move pointer back to tail
     dec l
 
     ; And update the existing tail location in our table
-    ld (hl),b
+    ld (hl),d
 
     jp update_head_history
 
 tail_moving_right:
 
-    ; If the distance from turn to tail is 1, chop off the tail and let the
-    ; turn become the new tail. It's gruesome, but it works.
-    cp 0x10
-    jp z,chop_off_tail
-
     ; Get tail location again and shift it right
-    ld a,b
+    ld a,d
     add a,0x10
-
-    ; Push new location back to b register
-    ld b,a
+    ld d,a
 
     ; Low bit of graphics
-    ld c,0x70
+    ld e,0x70
 
     ; Draw later
-    push bc
+    push de
 
     ; Otherwise, move pointer back to tail
     dec l
 
     ; And update the existing tail location in our table
-    ld (hl),b
+    ld (hl),d
 
     jp update_head_history
 
@@ -1067,62 +1060,45 @@ tail_moving_left:
 
     ; If the distance from turn to tail is -1, chop off the tail and let the
     ; turn become the new tail. It's gruesome, but it works.
+    ld a,b
     cp 0xf0
     jp z,chop_off_tail
 
     ; Get tail location again and shift it left
-    ld a,b
+    ld a,d
     sub 0x10
-
-    ; Push new location back to b register
-    ld b,a
+    ld d,a
 
     ; Low bit of graphics
-    ld c,0x60
+    ld e,0x60
 
     ; Draw later
-    push bc
+    push de
 
     ; Otherwise, move pointer back to tail
     dec l
 
     ; And update the existing tail location in our table
-    ld (hl),b
+    ld (hl),d
 
     jp update_head_history
 
 tail_moving_down:
 
-    ; If the distance from turn to tail is 1, chop off the tail and let the
-    ; turn become the new tail. It's gruesome, but it works.
-    and 0x0f
-    cp 0x01
-    jp z,chop_off_tail
-
-    ; Get tail location again and calculate the new Y value
-    ld a,b
-    and 0x0f
-    inc a
-
-    ; OR high (X) and low (Y) bits together, with the existing value of X and
-    ; the updated value of Y
-    ld c,a
-    ld a,b
-    and 0xf0
-    or c
-    ld b,a
+    ; Shift location down
+    inc d
 
     ; Low bit of graphics
-    ld c,0x58
+    ld e,0x58
 
     ; Draw later
-    push bc
+    push de
 
     ; Otherwise, move pointer back to tail
     dec l
 
     ; And update the existing tail location in our table
-    ld (hl),b
+    ld (hl),d
 
     jp update_head_history
 
@@ -1142,7 +1118,7 @@ chop_off_tail:
 
     ; If turn X minus tail X is not zero, we know the snake is moving in that
     ; axis
-    ld a,d
+    ld a,e
     and 0xf0
     ld c,a
     ld a,b
@@ -1152,7 +1128,7 @@ chop_off_tail:
 
     ; Otherwise the tail must be moving vertically. We use the carry flag to
     ; check if it's moving in a negative direction (i.e. up).
-    ld a,d
+    ld a,e
     and 0x0f
     ld c,a
     ld a,b
@@ -1168,6 +1144,8 @@ new_tail_moving_horizontally:
 
 new_tail_moving_up:
 
+    ld d,e
+
     ; Low bit of graphics
     ld e,0x68
 
@@ -1177,6 +1155,8 @@ new_tail_moving_up:
     jp update_head_history
 
 new_tail_moving_right:
+
+    ld d,e
 
     ; Low bit of graphics
     ld e,0x70
@@ -1188,6 +1168,8 @@ new_tail_moving_right:
 
 new_tail_moving_down:
 
+    ld d,e
+
     ; Low bit of graphics
     ld e,0x58
 
@@ -1197,6 +1179,8 @@ new_tail_moving_down:
     jp update_head_history
 
 new_tail_moving_left:
+
+    ld d,e
 
     ; Low bit of graphics
     ld e,0x60
