@@ -1528,16 +1528,16 @@ check_for_y_overlap_part_2:
 overlap:
 
     pop bc
-    dec sp
-    dec sp
 
     ; Cannot divide square (i.e. 1 pixel)
     ld a,b
     or a
-    jr z,next_quadrant
+    jr z,next_quadrant_without_pop_bc
 
-    ; Keep the old value of de at the top of the stack
+    ; Keep the previous values of bc and de at the top of the stack
     pop de
+    dec sp
+    dec sp
     dec sp
     dec sp
 
@@ -1567,6 +1567,8 @@ next_quadrant:
 
     ; Pop location of bottom-right of top-left quadrant from the stack
     pop bc
+
+next_quadrant_without_pop_bc:
 
     ; Pop location of top-left quadrant and bottom-left quadrant from the stack
     pop de
