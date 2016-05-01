@@ -1499,10 +1499,42 @@ check_for_y_overlap_part_2:
     cp c
     jr c,overlap
 
-    ; If B2 < A1, no overlap
-    jr nz,no_overlap
+    ; If B2 = A1, overlap
+    jr z,overlap
+
+    ; Otherwise, if B2 < A1, no overlap
+
+no_overlap:
+
+    ld h,(snake_history >> 8) & $FF
+    ld a,(tmp)
+    ld l,a
+
+    ; Check if the next section of snake overlaps this quadrant
+    djnz next_snake_section
+
+    ; Otherwise, add this quadrant to the free squares tables
+
+    ld a,(free_squares_length)
+    ld l,a
+
+    ld h,(free_squares_tl >> 8) & $FF
+
+    ld (hl),d
+
+    ld h,(free_squares_br >> 8) & $FF
+
+    ld (hl),e
+
+    inc a
+    ld (free_squares_length),a
+
+    jp next_quadrant
 
 overlap:
+
+    ; Disable interrupts, as we mess around with the stack pointer later
+    di
 
     pop bc
 
@@ -1513,12 +1545,12 @@ overlap:
 
     ; Keep the previous values of bc and de at the top of the stack
     pop de
-    push de
-    push bc
-    ; dec sp
-    ; dec sp
-    ; dec sp
-    ; dec sp
+    dec sp
+    dec sp
+    dec sp
+    dec sp
+
+    ei
 
     ; Load the location of top-left quadrant to register d
     ld a,d
@@ -1549,6 +1581,8 @@ next_quadrant:
 
 next_quadrant_without_pop_bc:
 
+    ei
+
     ; Pop location of top-left quadrant and bottom-left quadrant from the stack
     pop de
 
@@ -1575,33 +1609,6 @@ next_quadrant_without_pop_bc:
     ld e,a
 
     jp check_quadrant
-
-no_overlap:
-
-    ld h,(snake_history >> 8) & $FF
-    ld a,(tmp)
-    ld l,a
-
-    ; Check if the next section of snake overlaps this quadrant
-    djnz next_snake_section
-
-    ; Otherwise, add this quadrant to the free squares tables
-
-    ld a,(free_squares_length)
-    ld l,a
-
-    ld h,(free_squares_tl >> 8) & $FF
-
-    ld (hl),d
-
-    ld h,(free_squares_br >> 8) & $FF
-
-    ld (hl),e
-
-    inc a
-    ld (free_squares_length),a
-
-    jp next_quadrant
 
 top_right:
 
