@@ -349,14 +349,9 @@ rnd_end:
 
 start:
 
-    ei
-    halt
-
     ; Set border color to black
     xor a ; a = 0
     call $229B
-
-    halt
 
     ; Clear screen
     ld hl,0x4000
@@ -364,9 +359,6 @@ start:
     ld bc,0x17ff
     ld (hl),0
     ldir
-
-    halt
-    di
 
 draw_top_border:
 
@@ -562,8 +554,6 @@ draw_left_border_next:
     call draw_char
 
 initiate_input_loop:
-
-    ei
 
     ld a,(snake_direction_current)
     ld d,a
@@ -900,8 +890,6 @@ next_input_loop:
     jp input_loop
 
 update_current_direction:
-
-    di
 
     ; If direction not queued, jump
     ld a,e
@@ -1409,11 +1397,8 @@ check_quadrants:
 
 check_quadrant:
 
-    ld a,b
-    ld i,a
-
-    push bc
     push de
+    push bc
 
     ; Set register d to the location of the top-left corner
     ld a,d
@@ -1542,10 +1527,12 @@ check_for_y_overlap_part_2:
 
 overlap:
 
-    ld a,i
-    ld b,a
+    pop bc
+    dec sp
+    dec sp
 
     ; Cannot divide square (i.e. 1 pixel)
+    ld a,b
     or a
     jr z,next_quadrant
 
@@ -1578,11 +1565,11 @@ overlap:
 
 next_quadrant:
 
-    ; Pop location of top-left quadrant and bottom-left quadrant from the stack
-    pop de
-
     ; Pop location of bottom-right of top-left quadrant from the stack
     pop bc
+
+    ; Pop location of top-left quadrant and bottom-left quadrant from the stack
+    pop de
 
     ; If top-left or bottom-right quadrant, jump
     ld a,e
@@ -2160,14 +2147,6 @@ collision_detection_loop_end
     pop bc
 
 update_graphics_init:
-
-    ei
-
-    ; Wait for scan line to reach the end of the screen. This should reduce
-    ; tearing.
-    halt
-
-    di
 
     ; If food eaten flag is not set, loop 4 times to update grid locations:
     ; new head, existing head, new tail, existing tail
