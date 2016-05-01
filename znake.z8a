@@ -579,9 +579,6 @@ input_loop:
 ; Check for diagonal input from Kempston joystick port
 read_kempston_d:
 
-    ; Push input routine loop count to stack
-    push bc
-
     in a,(0x1f)
 
     ; up-right (bits 0 and 3)
@@ -863,9 +860,6 @@ replace_direction_queue:
     ld e,h
 
 next_input_loop:
-
-    ; Pop input routine loop count back from the stack
-    pop bc
 
     jp input_loop
 
@@ -1519,10 +1513,12 @@ overlap:
 
     ; Keep the previous values of bc and de at the top of the stack
     pop de
-    dec sp
-    dec sp
-    dec sp
-    dec sp
+    push de
+    push bc
+    ; dec sp
+    ; dec sp
+    ; dec sp
+    ; dec sp
 
     ; Load the location of top-left quadrant to register d
     ld a,d
@@ -1958,7 +1954,7 @@ collision_detection:
     ld a,d
 
     add a,0x10
-    jp c,restart_game
+    jp c,collision_with_border
 
     ld d,a
 
@@ -1971,7 +1967,7 @@ neck_to_bottom:
     and 0x0f
     inc a
     bit 4,a
-    jp nz,restart_game
+    jp nz,collision_with_border
 
     ld a,d
     inc a
@@ -1984,7 +1980,7 @@ neck_to_left:
     ld a,d
 
     sub 0x10
-    jp c,restart_game
+    jp c,collision_with_border
 
     ld d,a
 
@@ -1997,7 +1993,7 @@ neck_to_top:
     and 0x0f
     dec a
     bit 4,a
-    jp nz,restart_game
+    jp nz,collision_with_border
 
     ld a,d
     dec a
@@ -2050,7 +2046,7 @@ on_same_x_axis:
     ; Head at current turn (axis y)
 
     ; Collision
-    jp restart_game
+    jp collision_with_snake
 
 head_below_current_turn_axis_y:
 
@@ -2063,7 +2059,7 @@ head_below_current_turn_axis_y:
     jp c,collision_detection_loop_continue
 
     ; Collision
-    jp restart_game
+    jp collision_with_snake
 
 head_above_current_turn_axis_y:
 
@@ -2076,7 +2072,7 @@ head_above_current_turn_axis_y:
     jp nc,collision_detection_loop_continue
 
     ; Collision
-    jp restart_game
+    jp collision_with_snake
 
 on_same_y_axis:
 
@@ -2092,7 +2088,7 @@ on_same_y_axis:
     ; Head at current turn (axis x)
 
     ; Collision
-    jp restart_game
+    jp collision_with_snake
 
 head_left_of_current_turn_axis_x:
 
@@ -2105,7 +2101,7 @@ head_left_of_current_turn_axis_x:
     jp nc,collision_detection_loop_continue
 
     ; Collision
-    jp restart_game
+    jp collision_with_snake
 
 head_right_of_current_turn_axis_x:
 
@@ -2118,7 +2114,7 @@ head_right_of_current_turn_axis_x:
     jp c,collision_detection_loop_continue
 
     ; Collision
-    jp restart_game
+    jp collision_with_snake
 
 collision_detection_loop_continue:
 
@@ -2278,9 +2274,12 @@ draw_line:
 
     ret
 
-restart_game:
+collision_with_snake:
 
     pop bc
+
+collision_with_border:
+
     jp start
 
 end start
