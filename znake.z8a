@@ -934,62 +934,55 @@ update_head_history:
     add a,l
     ld l,a
 
-    ; Load current head location to register b
-    ld b,(hl)
+    ; Load current head location to register e
+    ld e,(hl)
 
     ; Move pointer to turn (or tail) before head
     dec l
 
-    ; Load current turn location to register d
-    ld d,(hl)
-
-    ; Store direction that was previously set in the input routine, for later
-    ; use
-    ld a,(snake_direction_current)
-    ld e,a
-
-    ; If head X minus turn X is not zero, we know the snake is moving in that
-    ; axis
-    ld a,d
-    and 0xf0
-    ld c,a
-    ld a,b
-    and 0xf0
-    sub c
-    jp nz,head_moving_horizontally
-
-    ; Otherwise the head must be moving vertically. We use the carry flag to
-    ; check if it's moving in a negative direction (i.e. up).
-    ld a,d
-    and 0x0f
-    ld c,a
-    ld a,b
-    and 0x0f
-    sub c
-    jp c,head_moving_up
-    jp head_moving_down
-
-head_moving_horizontally:
-
-    jp c,head_moving_left
-    jp head_moving_right
-
-head_moving_up:
+    ; Load current turn location to register b
+    ld b,(hl)
 
     ; Move pointer back to head
     inc l
 
-    ; Load head location to register b
-    ld a,(hl)
-    ld b,a
+    ; Subtract turn location from head location
+    ld a,e
+    sub b
+
+    ; Load result and flags to bc
+    push af
+    pop bc
+
+    ; If half carry
+    bit 4,c
+    jp nz,head_moving_up
+
+    ; If carry
+    bit 0,c
+    jp nz,head_moving_left
+
+    ; Load result to register a
+    ld a,b
+
+    ; If result > 16 (i.e. high bits activated) then jump
+    cp 0x10
+    jp c,head_moving_down
+
+    ; Otherwise, head must be moving right
+    jp head_moving_right
+
+head_moving_up:
+
+    ld b,e
 
     ; Depending on the current direction, the new head location may be placed
     ; to the right or to the left ...
 
-    bit 0,e
+    bit 0,d
     jp nz,head_turning_up_right
 
-    bit 1,e
+    bit 1,d
     jp nz,head_turning_up_left
 
     ; Low bit of graphics
@@ -1001,17 +994,7 @@ head_moving_up:
     ; ... otherwise the head is still moving up
 
     ; Get head location again and shift it up
-    ld a,b
-    and 0x0f
-    dec a
-
-    ; OR high (X) and low (Y) bits together, with the existing value of X and
-    ; the updated value of Y
-    ld c,a
-    ld a,b
-    and 0xf0
-    or c
-    ld b,a
+    dec b
 
     ; Low bit of graphics
     ld c,0x08
@@ -1020,26 +1003,22 @@ head_moving_up:
     push bc
 
     ; Update the existing head location in our table
-    ld (hl),a
+    ld (hl),b
 
     jp check_food_eaten
 
 head_moving_right:
 
-    ; Move pointer back to head
-    inc l
-
     ; Load head location to register b
-    ld a,(hl)
-    ld b,a
+    ld b,e
 
     ; Depending on the current direction, the new head location may be placed
     ; to the top or to the bottom ...
 
-    bit 2,e
+    bit 2,d
     jp nz,head_turning_right_down
 
-    bit 3,e
+    bit 3,d
     jp nz,head_turning_right_up
 
     ; Low bit of graphics
@@ -1070,20 +1049,16 @@ head_moving_right:
 
 head_moving_down:
 
-    ; Move pointer back to head
-    inc l
-
     ; Load head location to register b
-    ld a,(hl)
-    ld b,a
+    ld b,e
 
     ; Depending on the current direction, the new head location may be placed
     ; to the right or to the left ...
 
-    bit 0,e
+    bit 0,d
     jp nz,head_turning_down_right
 
-    bit 1,e
+    bit 1,d
     jp nz,head_turning_down_left
 
     ; Low bit of graphics
@@ -1095,17 +1070,7 @@ head_moving_down:
     ; ... otherwise the head is still moving up
 
     ; Get head location again and shift it down
-    ld a,b
-    and 0x0f
-    inc a
-
-    ; OR high (X) and low (Y) bits together, with the existing value of X and
-    ; the updated value of Y
-    ld e,a
-    ld a,b
-    and 0xf0
-    or e
-    ld b,a
+    inc b
 
     ; Low bit of graphics
     ld c,0x18
@@ -1114,26 +1079,22 @@ head_moving_down:
     push bc
 
     ; Update the existing head location in our table
-    ld (hl),a
+    ld (hl),b
 
     jp check_food_eaten
 
 head_moving_left:
 
-    ; Move pointer back to head
-    inc l
-
     ; Load head location to register b
-    ld a,(hl)
-    ld b,a
+    ld b,e
 
     ; Depending on the current direction, the new head location may be placed
     ; to the top or to the bottom ...
 
-    bit 2,e
+    bit 2,d
     jp nz,head_turning_left_down
 
-    bit 3,e
+    bit 3,d
     jp nz,head_turning_left_up
 
     ; Low bit of graphics
@@ -1203,18 +1164,8 @@ head_turning_right_up:
     ; Draw later
     push bc
 
-    ; Get head location again and calculate the new Y value
-    ld a,b
-    and 0x0f
-    dec a
-
-    ; OR high (X) and low (Y) bits together, with the existing value of X and
-    ; the updated value of Y
-    ld e,a
-    ld a,b
-    and 0xf0
-    or e
-    ld b,a
+    ; Get head location again and shift it up
+    dec b
 
     ; Low bit of graphics
     ld c,0x08
@@ -1226,7 +1177,7 @@ head_turning_right_up:
     inc l
 
     ; Add new head location to our table
-    ld (hl),a
+    ld (hl),b
 
     ld a,(snake_history_head_offset)
     inc a
@@ -1242,18 +1193,8 @@ head_turning_right_down:
     ; Draw later
     push bc
 
-    ; Get head location again and calculate the new Y value
-    ld a,b
-    and 0x0f
-    inc a
-
-    ; OR high (X) and low (Y) bits together, with the existing value of X and
-    ; the updated value of Y
-    ld e,a
-    ld a,b
-    and 0xf0
-    or e
-    ld b,a
+    ; Get head location again and shift it down
+    inc b
 
     ; Low bit of graphics
     ld c,0x18
@@ -1265,7 +1206,7 @@ head_turning_right_down:
     inc l
 
     ; Add new head location to our table
-    ld (hl),a
+    ld (hl),b
 
     ; Because the snake has turned:
     ld a,(snake_history_head_offset)
@@ -1348,18 +1289,8 @@ head_turning_left_down:
     ; Draw later
     push bc
 
-    ; Get head location again and calculate the new Y value
-    ld a,b
-    and 0x0f
-    inc a
-
-    ; OR high (X) and low (Y) bits together, with the existing value of X and
-    ; the updated value of Y
-    ld e,a
-    ld a,b
-    and 0xf0
-    or e
-    ld b,a
+    ; Get head location again and shift it down
+    inc b
 
     ; Low bit of graphics
     ld c,0x18
@@ -1371,7 +1302,7 @@ head_turning_left_down:
     inc l
 
     ; Add new head location to our table
-    ld (hl),a
+    ld (hl),b
 
     ld a,(snake_history_head_offset)
     inc a
@@ -1387,18 +1318,8 @@ head_turning_left_up:
     ; Draw later
     push bc
 
-    ; Get head location again and calculate the new Y value
-    ld a,b
-    and 0x0f
-    dec a
-
-    ; OR high (X) and low (Y) bits together, with the existing value of X and
-    ; the updated value of Y
-    ld e,a
-    ld a,b
-    and 0xf0
-    or e
-    ld b,a
+    ; Get head location again and shift it up
+    dec b
 
     ; Low bit of graphics
     ld c,0x08
@@ -1410,7 +1331,7 @@ head_turning_left_up:
     inc l
 
     ; Set new head location up 1 from previous head
-    ld (hl),a
+    ld (hl),b
 
     ; Because the snake has turned:
     ld a,(snake_history_head_offset)
@@ -1823,15 +1744,12 @@ update_tail_history:
     push af
     pop bc
 
-    ; Load flags to register a
-    ld a,c
-
     ; If half carry
-    bit 4,a
+    bit 4,c
     jp nz,tail_moving_up
 
     ; If carry
-    bit 0,a
+    bit 0,c
     jp nz,tail_moving_left
 
     ; Load result to register a
