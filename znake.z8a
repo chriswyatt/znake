@@ -265,10 +265,13 @@ previous_food_location: db 0x00
 current_food_location: db 0xab
 
 ; Bit 0: Food eaten
-; Bits 2-7: Reserved
+; Bits 1-7: Reserved
 flags: db 0x00
 
 previous_frame_count: db 0x00
+
+; Somewhere to stick data when registers are scarce
+tmp: db 0x00
 
 ; This random number generator is probably quite crappy. If the crappiness is
 ; observable from the food placement, we could look into improving this.
@@ -1410,7 +1413,7 @@ next_snake_section:
     inc l
 
     ld a,l
-    ex af,af'
+    ld (tmp),a
 
     ld a,(hl)
 
@@ -1579,8 +1582,8 @@ next_quadrant_without_pop_bc:
 
 no_overlap:
 
-    ld hl,snake_history
-    ex af,af'
+    ld h,(snake_history >> 8) & $FF
+    ld a,(tmp)
     ld l,a
 
     ; Check if the next section of snake overlaps this quadrant
@@ -2121,6 +2124,7 @@ collision_detection_loop_continue:
 
     ; Pop counter from stack
     pop bc
+
     jp collision_detection_loop
 
 collision_detection_loop_end
