@@ -268,6 +268,8 @@ current_food_location: db 0xab
 ; Bits 2-7: Reserved
 flags: db 0x00
 
+previous_frame_count: db 0x00
+
 ; This random number generator is probably quite crappy. If the crappiness is
 ; observable from the food placement, we could look into improving this.
 rnd:
@@ -561,22 +563,13 @@ initiate_input_loop:
     ld a,(snake_direction_queue)
     ld e,a
 
-    ; Number of times to loop through input routine, before we move the snake
-    ld bc,1500
-
 input_loop:
 
-    dec bc
-
-    ; If high byte is not zero, wait for input
-    ld a,b
-    or a
-    jp nz,read_kempston_d
-
-    ; Else if low byte is zero, change snake direction
-    ld a,c
-    or a
-    jp z,update_current_direction
+    ld hl,previous_frame_count
+    ld a,(23672)
+    sub (hl)
+    cp 10
+    jp nc,update_current_direction
 
     ; Else, wait for input
 
@@ -685,7 +678,7 @@ kempston_joy_up_right:
     jp nz,queue_right_up
 
     ; Else ignore
-    jp kempston_d_end
+    jp next_input_loop
 
 kempston_joy_down_right:
 
@@ -704,7 +697,7 @@ kempston_joy_down_right:
     jp nz,queue_right_down
 
     ; Else ignore
-    jp kempston_d_end
+    jp next_input_loop
 
 kempston_joy_down_left:
 
@@ -723,7 +716,7 @@ kempston_joy_down_left:
     jp nz,queue_left_down
 
     ; Else ignore
-    jp kempston_d_end
+    jp next_input_loop
 
 kempston_joy_up_left:
 
@@ -742,70 +735,54 @@ kempston_joy_up_left:
     jp nz,queue_left_up
 
     ; Else ignore
-    jp kempston_d_end
+    jp next_input_loop
 
 queue_up_right:
 
     ld e,0x18
 
-    jp kempston_d_end
+    jp next_input_loop
 
 queue_right_up:
 
     ld e,0x81
 
-    jp kempston_d_end
+    jp next_input_loop
 
 queue_right_down:
 
     ld e,0x41
 
-    jp kempston_d_end
+    jp next_input_loop
 
 queue_down_right:
 
     ld e,0x14
 
-    jp kempston_d_end
+    jp next_input_loop
 
 queue_down_left:
 
     ld e,0x24
 
-    jp kempston_d_end
+    jp next_input_loop
 
 queue_left_down:
 
     ld e,0x42
 
-    jp kempston_d_end
+    jp next_input_loop
 
 queue_left_up:
 
     ld e,0x82
 
-    jp kempston_d_end
+    jp next_input_loop
 
 queue_up_left:
 
     ld e,0x28
 
-kempston_d_end:
-
-    ; Because the diagonal checks run faster than the horizontal checks, we
-    ; need to slow it down a bit. There's possibly a cleaner way to do this?
-
-    ; Number of times to loop, before we return to input loop
-    ld b,4
-
-queue_diag_end_loop:
-
-    dec b
-
-    ; If not zero, continue loop
-    jp nz,queue_diag_end_loop
-
-    ; Else start next input loop
     jp next_input_loop
 
 kempston_joy_up:
@@ -890,6 +867,9 @@ next_input_loop:
     jp input_loop
 
 update_current_direction:
+
+    ld a,(23672)
+    ld (previous_frame_count),a
 
     ; If direction not queued, jump
     ld a,e
