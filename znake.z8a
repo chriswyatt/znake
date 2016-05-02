@@ -266,7 +266,7 @@ current_food_location: db 0xab
 
 ; Bit 0: Food eaten
 ; Bits 1-7: Reserved
-flags: db 0x00
+flags: db 0x01
 
 previous_frame_count: db 0x00
 
@@ -532,10 +532,340 @@ draw_left_border_next:
 
     call draw_char
 
-    ; Ideally we would pick a random location for the initial food (TODO)
+next_game_loop:
+
+    ; If food eaten flag is not set, jump
+    ld a,(flags)
+    bit 0,a
+    jp z,initiate_input_loop
+
+calculate_new_food_location:
+
+    ; Initialise tables
+    xor a ; a = 0
+    ld (free_squares_length),a
+
+    ; High bits: location of top-left quadrant
+    ; Low bits: offset to bottom-left quadrant / width / height
+    ld de,0x0008
+
+check_quadrants:
+
+    ; Load bottom-right of top-left quadrant to register b
+    ld b,0x77
+
+check_quadrant:
+
+    push de
+    push bc
+
+    ; Set register d to the location of the top-left corner
+    ld a,d
+    add a,e
+    ld d,a
+
+    ; Set register e to the location of the bottom-right corner
+    ld a,d
+    add a,b
+    ld e,a
+
+    ld hl,snake_history
+
+    ld a,(snake_history_tail_offset)
+    ld l,a
+
+    ; Initialise counter
+    ld a,(snake_history_head_offset)
+    sub l
+    ld b,a
+
+next_snake_section:
+
+    ; Load first turn or head location to register c
+    ld a,(hl)
+    ld c,a
+
+    ; Load second turn or tail location to register a
+    inc l
+
+    ld a,l
+    ld (tmp),a
+
+    ld a,(hl)
+
+    ; We need to take the lower location from the higher location; thus, we
+    ; need to sort them first.
+
+    ; If the snake is going left or up, jump
+    cp c
+    jr c,negative_direction
+
+    ; Otherwise, the snake is going right or down
+
+    ld h,c
+    ld l,a
+
+    jp check_for_x_overlap
+
+negative_direction:
+
+    ld h,a
+    ld l,c
+
+check_for_x_overlap:
+
+    ; Right of square (A2)
+    ld a,e
+    and 0xf0
+    ld c,a
+
+    ; Tail/turn 1 (B1)
+    ld a,h
+    and 0xf0
+
+    ; If A2 > B1, continue checking for overlap
+    cp c
+    jr c,check_for_x_overlap_part_2
+
+    ; If A2 < B1, no overlap
+    jr nz,no_overlap
+
+check_for_x_overlap_part_2:
+
+    ; Head/turn 2 (B2)
+    ld a,l
+    and 0xf0
+    ld c,a
+
+    ; Left of square (A1)
+    ld a,d
+    and 0xf0
+
+    ; If B2 > A1, continue checking for overlap
+    cp c
+    jr c,check_for_y_overlap
+
+    ; If B2 < A1, no overlap
+    jr nz,no_overlap
+
+check_for_y_overlap:
+
+    ; Bottom of square (A2)
+    ld a,e
+    and 0x0f
+    ld c,a
+
+    ; Tail/turn 1 (B1)
+    ld a,h
+    and 0x0f
+
+    ; If A2 > B1, continue checking for overlap
+    cp c
+    jr c,check_for_y_overlap_part_2
+
+    ; If A2 < B1, no overlap
+    jr nz,no_overlap
+
+check_for_y_overlap_part_2:
+
+    ; Head/turn 2 (B2)
+    ld a,l
+    and 0x0f
+    ld c,a
+
+    ; Top of square (A1)
+    ld a,d
+    and 0x0f
+
+    ; If B2 > A1, overlap
+    cp c
+    jr c,overlap
+
+    ; If B2 = A1, overlap
+    jr z,overlap
+
+    ; Otherwise, if B2 < A1, no overlap
+
+no_overlap:
+
+    ld h,(snake_history >> 8) & $FF
+    ld a,(tmp)
+    ld l,a
+
+    ; Check if the next section of snake overlaps this quadrant
+    djnz next_snake_section
+
+    ; Otherwise, add this quadrant to the free squares tables
+
+    ld a,(free_squares_length)
+    ld l,a
+
+    ld h,(free_squares_tl >> 8) & $FF
+
+    ld (hl),d
+
+    ld h,(free_squares_br >> 8) & $FF
+
+    ld (hl),e
+
+    inc a
+    ld (free_squares_length),a
+
+    jp next_quadrant
+
+overlap:
+
+    ; Disable interrupts, as we mess around with the stack pointer later
+    di
+
+    pop bc
+
+    ; Cannot divide square (i.e. 1 pixel)
+    ld a,b
+    or a
+    jr z,next_quadrant_without_pop_bc
+
+    ; Keep the previous values of bc and de at the top of the stack
+    pop de
+    dec sp
+    dec sp
+    dec sp
+    dec sp
+
+    ei
+
+    ; Load the location of top-left quadrant to register d
+    ld a,d
+    add a,e
+    ld d,a
+
+    ; Load the location of the bottom-right of the top-left quadrant to
+    ; register b
+    ld a,b
+    add a,0x11
+    rr a
+    ld e,a
+    sub 0x11
+    ld b,a
+
+    ; Load the location of the bottom-left quadrant to register e
+    ld a,e
+    and 0x0f
+    ld e,a
+
+    ; Check quadrants within this quadrant
+    call check_quadrant
+
+next_quadrant:
+
+    ; Pop location of bottom-right of top-left quadrant from the stack
+    pop bc
+
+next_quadrant_without_pop_bc:
+
+    ei
+
+    ; Pop location of top-left quadrant and bottom-left quadrant from the stack
+    pop de
+
+    ; If top-left or bottom-right quadrant, jump
+    ld a,e
+
+    or a
+    jp pe,top_left_or_bottom_right
+
+    ; Otherwise, top-right or bottom-left quadrant
+
+    ; If top-right, jump
+    and 0x0f
+    jr z,top_right
+
+    ; Otherwise, bottom-left
+
+    ld a,e
+    rl a
+    rl a
+    rl a
+    rl a
+    or e
+    ld e,a
+
+    jp check_quadrant
+
+top_right:
+
+    ld e,0x00
+
+    jp check_quadrant
+
+top_left_or_bottom_right:
+
+    ; If top-left, jump
+    jr z,top_left
+
+    ; Otherwise, bottom-right
+
+    ld a,e
+    and 0xf0
+    ld e,a
+
+    jp check_quadrant
+
+top_left:
+
+    ld a,d
+    or a
+    jr nz,return_to_parent_quadrant
+    ld a,b
+    cp 0x77
+    jr nz,return_to_parent_quadrant
+
+    jr create_food
+
+return_to_parent_quadrant:
+
+    ret
+
+create_food:
+
     ld a,(current_food_location)
     ld (previous_food_location),a
-    ld a,0x24
+
+    ; Pick a random free square
+
+    ld a,(free_squares_length)
+    ld b,a
+
+    call rnd
+    ld l,a
+
+    ld h,(free_squares_tl >> 8) & $FF
+    ld d,(hl)
+
+    ld h,(free_squares_br >> 8) & $FF
+    ld e,(hl)
+
+    ; Pick a random position within the free square. Ideally, we would reseed
+    ; the random generator (TODO).
+
+    ld a,e
+    sub d
+    ld h,a
+
+    and 0xf0
+    ld b,a
+    call rnd
+    and 0xf0
+    ld c,a
+
+    ld a,h
+    and 0x0f
+    ld b,a
+    call rnd
+    or c
+
+    add a,d
+
     ld (current_food_location),a
     ld e,a
 
@@ -544,10 +874,10 @@ draw_left_border_next:
 
     ; Column/row
     and 0xf0
-    rr a
-    rr a
-    rr a
-    rr a
+    srl a
+    srl a
+    srl a
+    srl a
     add a,8
     ld d,a
 
@@ -558,6 +888,10 @@ draw_left_border_next:
 
     call draw_char
 
+    ; Reset food eaten flag
+    ld hl,flags
+    res 0,(hl)
+
 initiate_input_loop:
 
     ld a,(snake_direction_current)
@@ -565,16 +899,6 @@ initiate_input_loop:
 
     ld a,(snake_direction_queue)
     ld e,a
-
-input_loop:
-
-    ld hl,previous_frame_count
-    ld a,(23672)
-    sub (hl)
-    cp 10
-    jp nc,update_current_direction
-
-    ; Else, wait for input
 
 ; Check for diagonal input from Kempston joystick port
 read_kempston_d:
@@ -861,9 +1185,13 @@ replace_direction_queue:
 
 next_input_loop:
 
-    jp input_loop
+    ld hl,previous_frame_count
+    ld a,(23672)
+    sub (hl)
+    cp 10
+    jp c,read_kempston_d
 
-update_current_direction:
+    ; Else, update current direction
 
     ld a,(23672)
     ld (previous_frame_count),a
@@ -1356,335 +1684,6 @@ check_food_eaten:
     ; Otherwise, set food eaten flag ...
     ld hl,flags
     set 0,(hl)
-
-    ; ... and calculate new food location
-
-    ; Initialise tables
-    xor a ; a = 0
-    ld (free_squares_length),a
-
-    ; High bits: location of top-left quadrant
-    ; Low bits: offset to bottom-left quadrant / width / height
-    ld de,0x0008
-
-check_quadrants:
-
-    ; Load bottom-right of top-left quadrant to register b
-    ld b,0x77
-
-check_quadrant:
-
-    push de
-    push bc
-
-    ; Set register d to the location of the top-left corner
-    ld a,d
-    add a,e
-    ld d,a
-
-    ; Set register e to the location of the bottom-right corner
-    ld a,d
-    add a,b
-    ld e,a
-
-    ld hl,snake_history
-
-    ld a,(snake_history_tail_offset)
-    ld l,a
-
-    ; Initialise counter
-    ld a,(snake_history_head_offset)
-    sub l
-    ld b,a
-
-next_snake_section:
-
-    ; Load first turn or head location to register c
-    ld a,(hl)
-    ld c,a
-
-    ; Load second turn or tail location to register a
-    inc l
-
-    ld a,l
-    ld (tmp),a
-
-    ld a,(hl)
-
-    ; We need to take the lower location from the higher location; thus, we
-    ; need to sort them first.
-
-    ; If the snake is going left or up, jump
-    cp c
-    jr c,negative_direction
-
-    ; Otherwise, the snake is going right or down
-
-    ld h,c
-    ld l,a
-
-    jp check_for_x_overlap
-
-negative_direction:
-
-    ld h,a
-    ld l,c
-
-check_for_x_overlap:
-
-    ; Right of square (A2)
-    ld a,e
-    and 0xf0
-    ld c,a
-
-    ; Tail/turn 1 (B1)
-    ld a,h
-    and 0xf0
-
-    ; If A2 > B1, continue checking for overlap
-    cp c
-    jr c,check_for_x_overlap_part_2
-
-    ; If A2 < B1, no overlap
-    jr nz,no_overlap
-
-check_for_x_overlap_part_2:
-
-    ; Head/turn 2 (B2)
-    ld a,l
-    and 0xf0
-    ld c,a
-
-    ; Left of square (A1)
-    ld a,d
-    and 0xf0
-
-    ; If B2 > A1, continue checking for overlap
-    cp c
-    jr c,check_for_y_overlap
-
-    ; If B2 < A1, no overlap
-    jr nz,no_overlap
-
-check_for_y_overlap:
-
-    ; Bottom of square (A2)
-    ld a,e
-    and 0x0f
-    ld c,a
-
-    ; Tail/turn 1 (B1)
-    ld a,h
-    and 0x0f
-
-    ; If A2 > B1, continue checking for overlap
-    cp c
-    jr c,check_for_y_overlap_part_2
-
-    ; If A2 < B1, no overlap
-    jr nz,no_overlap
-
-check_for_y_overlap_part_2:
-
-    ; Head/turn 2 (B2)
-    ld a,l
-    and 0x0f
-    ld c,a
-
-    ; Top of square (A1)
-    ld a,d
-    and 0x0f
-
-    ; If B2 > A1, overlap
-    cp c
-    jr c,overlap
-
-    ; If B2 = A1, overlap
-    jr z,overlap
-
-    ; Otherwise, if B2 < A1, no overlap
-
-no_overlap:
-
-    ld h,(snake_history >> 8) & $FF
-    ld a,(tmp)
-    ld l,a
-
-    ; Check if the next section of snake overlaps this quadrant
-    djnz next_snake_section
-
-    ; Otherwise, add this quadrant to the free squares tables
-
-    ld a,(free_squares_length)
-    ld l,a
-
-    ld h,(free_squares_tl >> 8) & $FF
-
-    ld (hl),d
-
-    ld h,(free_squares_br >> 8) & $FF
-
-    ld (hl),e
-
-    inc a
-    ld (free_squares_length),a
-
-    jp next_quadrant
-
-overlap:
-
-    ; Disable interrupts, as we mess around with the stack pointer later
-    di
-
-    pop bc
-
-    ; Cannot divide square (i.e. 1 pixel)
-    ld a,b
-    or a
-    jr z,next_quadrant_without_pop_bc
-
-    ; Keep the previous values of bc and de at the top of the stack
-    pop de
-    dec sp
-    dec sp
-    dec sp
-    dec sp
-
-    ei
-
-    ; Load the location of top-left quadrant to register d
-    ld a,d
-    add a,e
-    ld d,a
-
-    ; Load the location of the bottom-right of the top-left quadrant to
-    ; register b
-    ld a,b
-    add a,0x11
-    rr a
-    ld e,a
-    sub 0x11
-    ld b,a
-
-    ; Load the location of the bottom-left quadrant to register e
-    ld a,e
-    and 0x0f
-    ld e,a
-
-    ; Check quadrants within this quadrant
-    call check_quadrant
-
-next_quadrant:
-
-    ; Pop location of bottom-right of top-left quadrant from the stack
-    pop bc
-
-next_quadrant_without_pop_bc:
-
-    ei
-
-    ; Pop location of top-left quadrant and bottom-left quadrant from the stack
-    pop de
-
-    ; If top-left or bottom-right quadrant, jump
-    ld a,e
-
-    or a
-    jp pe,top_left_or_bottom_right
-
-    ; Otherwise, top-right or bottom-left quadrant
-
-    ; If top-right, jump
-    and 0x0f
-    jr z,top_right
-
-    ; Otherwise, bottom-left
-
-    ld a,e
-    rl a
-    rl a
-    rl a
-    rl a
-    or e
-    ld e,a
-
-    jp check_quadrant
-
-top_right:
-
-    ld e,0x00
-
-    jp check_quadrant
-
-top_left_or_bottom_right:
-
-    ; If top-left, jump
-    jr z,top_left
-
-    ; Otherwise, bottom-right
-
-    ld a,e
-    and 0xf0
-    ld e,a
-
-    jp check_quadrant
-
-top_left:
-
-    ld a,d
-    or a
-    jr nz,return_to_parent_quadrant
-    ld a,b
-    cp 0x77
-    jr nz,return_to_parent_quadrant
-
-    jr create_food
-
-return_to_parent_quadrant:
-
-    ret
-
-create_food:
-
-    ld a,(current_food_location)
-    ld (previous_food_location),a
-
-    ; Pick a random free square
-
-    ld a,(free_squares_length)
-    ld b,a
-
-    call rnd
-    ld l,a
-
-    ld h,(free_squares_tl >> 8) & $FF
-    ld d,(hl)
-
-    ld h,(free_squares_br >> 8) & $FF
-    ld e,(hl)
-
-    ; Pick a random position within the free square. Ideally, we would reseed
-    ; the random generator (TODO).
-
-    ld a,e
-    sub d
-    ld h,a
-
-    and 0xf0
-    ld b,a
-    call rnd
-    and 0xf0
-    ld c,a
-
-    ld a,h
-    and 0x0f
-    ld b,a
-    call rnd
-    or c
-
-    add a,d
-
-    ld (current_food_location),a
 
     ; Skip tail update (i.e. grow snake)
     jp collision_detection
@@ -2185,40 +2184,7 @@ update_graphics:
 
 update_graphics_end:
 
-    ; If food eaten flag is not set, jump
-    ld a,(flags)
-    bit 0,a
-    jp z,initiate_input_loop
-
-    ; Otherwise, reset food eaten flag ...
-    res 0,a
-    ld (flags),a
-
-    ; ... and draw new food
-
-    ld a,(current_food_location)
-    ld e,a
-
-    ; Location of food
-    ld hl,0x8178
-
-    ; Column/row
-    and 0xf0
-    srl a
-    srl a
-    srl a
-    srl a
-    add a,8
-    ld d,a
-
-    ld a,e
-    and 0x0f
-    add a,4
-    ld e,a
-
-    call draw_char
-
-    jp initiate_input_loop
+    jp next_game_loop
 
 ; Takes column/row (bc) and pointer (hl) and draws a character to the display
 ; buffer
@@ -2286,6 +2252,10 @@ collision_with_snake:
     pop bc
 
 collision_with_border:
+
+    ; Set food eaten flag
+    ld hl,flags
+    set 0,(hl)
 
     jp start
 

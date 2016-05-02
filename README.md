@@ -17,11 +17,12 @@ Currently, only the Kempston interface is supported
 * Title screen
 
 ## Known issues
-* Timing is jerky, especially when the snake eats food
 * Food placement is not particularly random, and due to a quirk in the design,
   food tends to be placed close to the snake
 * ZX Spectrum eventually resets if left unattended (with the game
   continually restarting)
+* Food placement algorithm is slow, which can cause the game to momentarily
+  freeze, and also controls become unresponsive
 
 ## License
 See LICENSE
