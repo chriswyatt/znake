@@ -1,16 +1,12 @@
 # znake
 Snake clone written in Z80 assembly for the ZX Spectrum
 
-## Under Development
-Currently this is just an early demo, but feel free to send feedback to me at
-the World of Spectrum forums
+## Controls
+Currently, only the Kempston interface is supported
 
 ## Compile
 Znake was compiled using Pasmo:
 `pasmo --name znake --tapbas znake.z8a znake.tap`
-
-## Controls
-Currently, only the Kempston interface is supported
 
 ## Todo
 * High score
