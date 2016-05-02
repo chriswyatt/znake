@@ -386,8 +386,7 @@ draw_top_border_next:
     pop bc
 
     inc d
-    dec b
-    jp nz,draw_top_border_next
+    djnz draw_top_border_next
 
 draw_right_border:
 
@@ -410,8 +409,7 @@ draw_right_border_next:
     pop bc
 
     inc e
-    dec b
-    jp nz,draw_right_border_next
+    djnz draw_right_border_next
 
 draw_bottom_border:
 
@@ -434,8 +432,7 @@ draw_bottom_border_next:
     pop bc
 
     inc d
-    dec b
-    jp nz,draw_bottom_border_next
+    djnz draw_bottom_border_next
 
 draw_left_border:
 
@@ -458,8 +455,7 @@ draw_left_border_next:
     pop bc
 
     inc e
-    dec b
-    jp nz,draw_left_border_next
+    djnz draw_left_border_next
 
     ; Location of border top-right
     ld hl,0x81a0
@@ -886,6 +882,7 @@ create_food:
     add a,4
     ld e,a
 
+    halt
     call draw_char
 
     ; Reset food eaten flag
@@ -981,24 +978,17 @@ read_kempston_hv:
 ; horizontal/vertical direction. We could consider allowing this to be user
 ; configurable.
 
-; Using the bit opcode instead of bitmasks would be slightly more efficient
-; here. We can leave the bitmasks for now, until we are sure this is the
-; control scheme we want.
-
 kempston_joy_up_right:
 
     ; Load current direction into accumulator
     ld a,d
 
     ; If current direction is left
-    and 0x02
+    bit 1,a
     jp nz,queue_up_right
 
-    ; Load current direction into accumulator
-    ld a,d
-
     ; If current direction is down
-    and 0x04
+    bit 2,a
     jp nz,queue_right_up
 
     ; Else ignore
@@ -1010,14 +1000,11 @@ kempston_joy_down_right:
     ld a,d
 
     ; If current direction is left
-    and 0x02
+    bit 1,a
     jp nz,queue_down_right
 
-    ; Load current direction into accumulator
-    ld a,d
-
     ; If current direction is up
-    and 0x08
+    bit 3,a
     jp nz,queue_right_down
 
     ; Else ignore
@@ -1029,14 +1016,11 @@ kempston_joy_down_left:
     ld a,d
 
     ; If current direction is right
-    and 0x01
+    bit 0,a
     jp nz,queue_down_left
 
-    ; Load current direction into accumulator
-    ld a,d
-
     ; If current direction is up
-    and 0x08
+    bit 3,a
     jp nz,queue_left_down
 
     ; Else ignore
@@ -1048,14 +1032,11 @@ kempston_joy_up_left:
     ld a,d
 
     ; If current direction is right
-    and 0x01
+    bit 0,a
     jp nz,queue_up_left
 
-    ; Load current direction into accumulator
-    ld a,d
-
     ; If current direction is down
-    and 0x04
+    bit 2,a
     jp nz,queue_left_up
 
     ; Else ignore
@@ -1943,7 +1924,7 @@ collision_detection:
     ; Location of head
     ld c,(hl)
 
-    ; Loop expects current location in register d
+    ; Loop expects current head location in register d
     ld d,c
 
     ld a,(snake_direction_current)
@@ -2141,6 +2122,7 @@ update_graphics_init:
 
     ld hl,flags
     bit 0,(hl)
+    halt
     jp z,draw_tail
 
     ; Otherwise, loop 2 times to update grid locations: new head, existing head
