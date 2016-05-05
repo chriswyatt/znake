@@ -741,7 +741,7 @@ overlap:
     ; register b
     ld a,b
     add a,0x11
-    rr a
+    rra
     ld e,a
     sub 0x11
     ld b,a
@@ -2182,11 +2182,12 @@ draw_char:
 
     ; This calculates the row number grouped by display section, i.e.:
     ; row 0 = 0x00, row 1 = 0x20, row 7 = 0xE0, row 8 = 0x00, etc.
-    sla a
-    sla a
-    sla a
-    sla a
-    sla a
+    rlca
+    rlca
+    rlca
+    rlca
+    rlca
+    and 0xf0
 
     ; The first line of each column is offset by a byte
     add a,d
@@ -2207,8 +2208,7 @@ draw_line:
     ; The high byte is incremented to get the destination of the next line
     inc d
 
-    dec b
-    jp nz,draw_line
+    djnz draw_line
 
     ret
 
