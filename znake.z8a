@@ -170,6 +170,8 @@ org 0x8100
 ; The high bytes contain the X coordinates, and the low bytes contain the Y
 ; coordinates
 
+; The memory address of the table must be kept aligned to a multiple of 256
+; bytes
 org 0x8200
 
 free_squares_tl:
@@ -211,6 +213,8 @@ free_squares_tl:
     db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
     db 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
 
+; The memory address of the table must be kept aligned to a multiple of 256
+; bytes
 org 0x8300
 
 free_squares_br:
@@ -304,7 +308,7 @@ rnd:
 
 rotate_rnd_num:
 
-    rl a
+    rlca
 
     dec c
     jr nz,rotate_rnd_num
@@ -331,8 +335,8 @@ rotate_rnd_num:
     ; If within range, jump out of loop
     jp c,rnd_end
 
-    ; Otherwise, try and xor with upper limit
-    xor b
+    ; Otherwise, try and xor
+    xor 0xff
 
     ; Compare the result to the upper limit
     cp b
@@ -571,7 +575,7 @@ check_quadrant:
     add a,b
     ld e,a
 
-    ld hl,snake_history
+    ld h,(snake_history >> 8) & $FF
 
     ld a,(snake_history_tail_offset)
     ld l,a
@@ -717,9 +721,6 @@ no_overlap:
 
 overlap:
 
-    ; Disable interrupts, as we mess around with the stack pointer later
-    di
-
     pop bc
 
     ; Cannot divide square (i.e. 1 pixel)
@@ -727,14 +728,9 @@ overlap:
     or a
     jr z,next_quadrant_without_pop_bc
 
-    ; Keep the previous values of bc and de at the top of the stack
     pop de
-    dec sp
-    dec sp
-    dec sp
-    dec sp
-
-    ei
+    push de
+    push bc
 
     ; Load the location of top-left quadrant to register d
     ld a,d
@@ -765,8 +761,6 @@ next_quadrant:
 
 next_quadrant_without_pop_bc:
 
-    ei
-
     ; Pop location of top-left quadrant and bottom-left quadrant from the stack
     pop de
 
@@ -785,11 +779,11 @@ next_quadrant_without_pop_bc:
     ; Otherwise, bottom-left
 
     ld a,e
-    rl a
-    rl a
-    rl a
-    rl a
-    or e
+    rlca
+    rlca
+    rlca
+    rlca
+    and 0xf0
     ld e,a
 
     jp check_quadrant
@@ -875,11 +869,11 @@ create_food:
     ld hl,0x8178
 
     ; Column/row
-    and 0xf0
-    srl a
-    srl a
-    srl a
-    srl a
+    rrca
+    rrca
+    rrca
+    rrca
+    and 0x0f
     add a,8
     ld d,a
 
@@ -986,15 +980,12 @@ read_kempston_hv:
 
 kempston_joy_up_right:
 
-    ; Load current direction into accumulator
-    ld a,d
-
     ; If current direction is left
-    bit 1,a
+    bit 1,d
     jp nz,queue_up_right
 
     ; If current direction is down
-    bit 2,a
+    bit 2,d
     jp nz,queue_right_up
 
     ; Else ignore
@@ -1002,15 +993,12 @@ kempston_joy_up_right:
 
 kempston_joy_down_right:
 
-    ; Load current direction into accumulator
-    ld a,d
-
     ; If current direction is left
-    bit 1,a
+    bit 1,d
     jp nz,queue_down_right
 
     ; If current direction is up
-    bit 3,a
+    bit 3,d
     jp nz,queue_right_down
 
     ; Else ignore
@@ -1018,15 +1006,12 @@ kempston_joy_down_right:
 
 kempston_joy_down_left:
 
-    ; Load current direction into accumulator
-    ld a,d
-
     ; If current direction is right
-    bit 0,a
+    bit 0,d
     jp nz,queue_down_left
 
     ; If current direction is up
-    bit 3,a
+    bit 3,d
     jp nz,queue_left_down
 
     ; Else ignore
@@ -1034,15 +1019,12 @@ kempston_joy_down_left:
 
 kempston_joy_up_left:
 
-    ; Load current direction into accumulator
-    ld a,d
-
     ; If current direction is right
-    bit 0,a
+    bit 0,d
     jp nz,queue_up_left
 
     ; If current direction is down
-    bit 2,a
+    bit 2,d
     jp nz,queue_left_up
 
     ; Else ignore
@@ -1137,10 +1119,11 @@ kempston_joy_hv:
     ; Otherwise, use the higher bits, as these contain the last requested
     ; direction
 
-    srl a
-    srl a
-    srl a
-    srl a
+    rrca
+    rrca
+    rrca
+    rrca
+    and 0x0f
 
 kempston_joy_hv_part_2:
 
@@ -1157,10 +1140,11 @@ kempston_joy_hv_part_2:
     ; Otherwise append
 
     ld a,h
-    sla a
-    sla a
-    sla a
-    sla a
+    rlca
+    rlca
+    rlca
+    rlca
+    and 0xf0
     or e
     ld e,a
 
@@ -1191,10 +1175,11 @@ next_input_loop:
     ld d,a
 
     ld a,e
-    srl a
-    srl a
-    srl a
-    srl a
+    rrca
+    rrca
+    rrca
+    rrca
+    and 0x0f
     ld e,a
 
 update_head_history:
@@ -2142,11 +2127,11 @@ update_graphics:
 
     ; Load x-coordinate into register b
     ld a,h
-    and 0xf0
-    srl a
-    srl a
-    srl a
-    srl a
+    rrca
+    rrca
+    rrca
+    rrca
+    and 0x0f
     add a,8
     ld d,a
 
@@ -2174,17 +2159,17 @@ draw_char:
 
     ; Calculate high byte of display location
 
-    ; The high byte represents the display section and line number (which is added
-    ; later on)
+    ; The high byte represents the display section and line number (which is
+    ; added later on)
 
     ld a,e
 
-    ; Discard all but bits 3 and 4. Taken in isolation, these are the offsets for
-    ; the display section, specifically 0x00, 0x08 and 0x10
+    ; Discard all but bits 3 and 4. Taken in isolation, these are the offsets
+    ; for the display section, specifically 0x00, 0x08 and 0x10
     and 0x18 ;
 
-    ; The high byte for the first line of each character is either 0x40, 0x48 or
-    ; 0x50, depending on which section it recides in
+    ; The high byte for the first line of each character is either 0x40, 0x48
+    ; or 0x50, depending on which section it recides in
     add a,0x40
 
     ld b,a

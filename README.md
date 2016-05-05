@@ -13,10 +13,9 @@ Znake was compiled using Pasmo:
 * Title screen
 
 ## Known issues
-* Food placement is not particularly random, and due to a quirk in the design,
-  food tends to be placed close to the snake
-* Food placement algorithm is slow, which can cause the game to momentarily
-  freeze, and also controls become unresponsive
+* Food tends to be placed at bottom-left or close to snake.
+* During testing, new food did not appear when the snake almost filled the
+  screen. Needs more investigating to see how reproducible it is.
 
 ## License
 See LICENSE
