@@ -562,8 +562,8 @@ check_quadrants:
 
 check_quadrant:
 
-    push de
     push bc
+    push de
 
     ; Set register d to the location of the top-left corner
     ld a,d
@@ -721,16 +721,15 @@ no_overlap:
 
 overlap:
 
-    pop bc
-
     ; Cannot divide square (i.e. 1 pixel)
-    ld a,b
-    or a
-    jr z,next_quadrant_without_pop_bc
+    ld a,e
+    cp d
+    jr z,next_quadrant
 
     pop de
-    push de
+    pop bc
     push bc
+    push de
 
     ; Load the location of top-left quadrant to register d
     ld a,d
@@ -756,13 +755,11 @@ overlap:
 
 next_quadrant:
 
-    ; Pop location of bottom-right of top-left quadrant from the stack
-    pop bc
-
-next_quadrant_without_pop_bc:
-
     ; Pop location of top-left quadrant and bottom-left quadrant from the stack
     pop de
+
+    ; Pop location of bottom-right of top-left quadrant from the stack
+    pop bc
 
     ; If top-left or bottom-right quadrant, jump
     ld a,e
