@@ -14,8 +14,8 @@ Znake was compiled using Pasmo:
 
 ## Known issues
 * Food tends to be placed at bottom-left or close to snake.
-* During testing, new food did not appear when the snake almost filled the
-  screen. Needs more investigating to see how reproducible it is.
+* When snake has almost filled screen, food may be placed at the furthermost
+  bottom-left square, even if the snake is occupying that square.
 
 ## License
 See LICENSE
