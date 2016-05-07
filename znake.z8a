@@ -274,9 +274,6 @@ flags: db 0x01
 
 previous_frame_count: db 0x00
 
-; Somewhere to stick data when registers are scarce
-tmp: db 0x00
-
 ; This random number generator is probably quite crappy. If the crappiness is
 ; observable from the food placement, we could look into improving this.
 rnd:
@@ -585,35 +582,33 @@ check_quadrant:
 
 next_snake_section:
 
+    ; Load first turn or tail location to register a
+    ld a,(hl)
+
+    inc l
+    ld c,l
+
+    ; Push counter and snake history offset to register
     push bc
 
-    ; Load first turn or tail location to register c
-    ld a,(hl)
-    ld c,a
-
-    ; Load second turn or head location to register a
-    inc l
-
-    ld a,l
-    ld (tmp),a
-
-    ld a,(hl)
+    ; Load second turn or head location to register c
+    ld c,(hl)
 
     ; We need to take the lower location from the higher location; thus, we
     ; need to sort them first.
 
-    ; If the snake is going left or up, jump
+    ; If the snake is going right or down, jump
     cp c
-    jr c,negative_direction
+    jr c,positive_direction
 
-    ; Otherwise, the snake is going right or down
+    ; Otherwise, the snake is going left or up
 
     ld h,c
     ld l,a
 
     jp check_no_overlap
 
-negative_direction:
+positive_direction:
 
     ld h,a
     ld l,c
@@ -629,10 +624,13 @@ check_no_overlap:
     push af
     pop bc
 
-    ; If A2 < B1, no overlap
+    ; If A2x < B1x or A2y < B2y, no overlap
+    ; Half carry and carry flags are checked
     ld a,c
     and 0x11
-    jr nz,no_overlap
+
+    ; Store result in register h
+    ld h,a
 
     ; Tail/turn 2 (B2)
     ld a,l
@@ -643,21 +641,22 @@ check_no_overlap:
     push af
     pop bc
 
-    ; If B2 < A1, no overlap
+    ; If B2x < A1x or B2y < A1y, no overlap
+    ; Half carry and carry flags are checked
     ld a,c
     and 0x11
-    jr nz,no_overlap
 
-    ; Otherwise, overlap
-    jp overlap
+    or h
+
+    jr z,overlap
 
 no_overlap:
 
-    ld h,(snake_history >> 8) & $FF
-    ld a,(tmp)
-    ld l,a
-
+    ; Pop counter and snake history offset from register
     pop bc
+
+    ld h,(snake_history >> 8) & $FF
+    ld l,c
 
     ; Check if the next section of snake overlaps this quadrant
     djnz next_snake_section
@@ -682,6 +681,7 @@ no_overlap:
 
 overlap:
 
+    ; Pop counter and snake history offset from register (no longer needed)
     pop bc
 
     ; Cannot divide square (i.e. 1 pixel)
@@ -1108,7 +1108,10 @@ next_input_loop:
     ld hl,previous_frame_count
     ld a,(23672)
     sub (hl)
+
+    ; Snake speed (lower = faster)
     cp 10
+
     jp c,read_kempston_d
 
     ; Else, update current direction
