@@ -13,9 +13,8 @@ Znake was compiled using Pasmo:
 * Title screen
 
 ## Known issues
-* Food tends to be placed at bottom-left or close to snake.
-* When snake has almost filled screen, food may be placed at the furthermost
-  bottom-left square, even if the snake is occupying that square.
+* Food placement algorithm is too slow
+* Controls can be unresponsive when snake eats food
 
 ## License
 See LICENSE

@@ -551,19 +551,17 @@ calculate_new_food_location:
     xor a ; a = 0
     ld (free_squares_length),a
 
-    ; High bits: location of top-left quadrant
-    ; Low bits: offset to bottom-left quadrant / width / height
+    ; d: location of top-left quadrant
+    ; e: offset to bottom-left quadrant / width / height
     ld de,0x0008
 
-check_quadrants:
-
-    ; Load bottom-right of top-left quadrant to register b
+    ; Load offset to bottom-right of quadrants to register b
     ld b,0x77
 
 check_quadrant:
 
-    push bc
     push de
+    push bc
 
     ; Set register d to the location of the top-left corner
     ld a,d
@@ -587,11 +585,13 @@ check_quadrant:
 
 next_snake_section:
 
-    ; Load first turn or head location to register c
+    push bc
+
+    ; Load first turn or tail location to register c
     ld a,(hl)
     ld c,a
 
-    ; Load second turn or tail location to register a
+    ; Load second turn or head location to register a
     inc l
 
     ld a,l
@@ -611,92 +611,53 @@ next_snake_section:
     ld h,c
     ld l,a
 
-    jp check_for_x_overlap
+    jp check_no_overlap
 
 negative_direction:
 
     ld h,a
     ld l,c
 
-check_for_x_overlap:
+check_no_overlap:
 
-    ; Right of square (A2)
+    ; Bottom-right of square (A2) 
     ld a,e
-    and 0xf0
-    ld c,a
 
-    ; Tail/turn 1 (B1)
-    ld a,h
-    and 0xf0
+    ; Minus tail/turn 1 (B1)
+    sub h
 
-    ; If A2 > B1, continue checking for overlap
-    cp c
-    jr c,check_for_x_overlap_part_2
+    push af
+    pop bc
 
     ; If A2 < B1, no overlap
+    ld a,c
+    and 0x11
     jr nz,no_overlap
 
-check_for_x_overlap_part_2:
-
-    ; Head/turn 2 (B2)
+    ; Tail/turn 2 (B2)
     ld a,l
-    and 0xf0
-    ld c,a
 
-    ; Left of square (A1)
-    ld a,d
-    and 0xf0
+    ; Minus top-left of square (A1)
+    sub d
 
-    ; If B2 > A1, continue checking for overlap
-    cp c
-    jr c,check_for_y_overlap
+    push af
+    pop bc
 
     ; If B2 < A1, no overlap
+    ld a,c
+    and 0x11
     jr nz,no_overlap
 
-check_for_y_overlap:
-
-    ; Bottom of square (A2)
-    ld a,e
-    and 0x0f
-    ld c,a
-
-    ; Tail/turn 1 (B1)
-    ld a,h
-    and 0x0f
-
-    ; If A2 > B1, continue checking for overlap
-    cp c
-    jr c,check_for_y_overlap_part_2
-
-    ; If A2 < B1, no overlap
-    jr nz,no_overlap
-
-check_for_y_overlap_part_2:
-
-    ; Head/turn 2 (B2)
-    ld a,l
-    and 0x0f
-    ld c,a
-
-    ; Top of square (A1)
-    ld a,d
-    and 0x0f
-
-    ; If B2 > A1, overlap
-    cp c
-    jr c,overlap
-
-    ; If B2 = A1, overlap
-    jr z,overlap
-
-    ; Otherwise, if B2 < A1, no overlap
+    ; Otherwise, overlap
+    jp overlap
 
 no_overlap:
 
     ld h,(snake_history >> 8) & $FF
     ld a,(tmp)
     ld l,a
+
+    pop bc
 
     ; Check if the next section of snake overlaps this quadrant
     djnz next_snake_section
@@ -721,31 +682,22 @@ no_overlap:
 
 overlap:
 
+    pop bc
+
     ; Cannot divide square (i.e. 1 pixel)
     ld a,e
-    cp d
+    sub d
     jr z,next_quadrant
-
-    pop de
-    pop bc
-    push bc
-    push de
-
-    ; Load the location of top-left quadrant to register d
-    ld a,d
-    add a,e
-    ld d,a
 
     ; Load the location of the bottom-right of the top-left quadrant to
     ; register b
-    ld a,b
     add a,0x11
     rra
     ld e,a
     sub 0x11
     ld b,a
 
-    ; Load the location of the bottom-left quadrant to register e
+    ; Load the offset to the bottom-left quadrant to register e
     ld a,e
     and 0x0f
     ld e,a
@@ -755,15 +707,16 @@ overlap:
 
 next_quadrant:
 
-    ; Pop location of top-left quadrant and bottom-left quadrant from the stack
-    pop de
-
-    ; Pop location of bottom-right of top-left quadrant from the stack
+    ; Pop offset to bottom-right of quadrant from the stack
     pop bc
 
-    ; If top-left or bottom-right quadrant, jump
+    ; Pop location of top-left quadrant and offset to bottom-left quadrant
+    ; from the stack
+    pop de
+
     ld a,e
 
+    ; If top-left or bottom-right quadrant, jump
     or a
     jp pe,top_left_or_bottom_right
 
@@ -775,12 +728,11 @@ next_quadrant:
 
     ; Otherwise, bottom-left
 
-    ld a,e
     rlca
     rlca
     rlca
     rlca
-    and 0xf0
+    or e
     ld e,a
 
     jp check_quadrant
