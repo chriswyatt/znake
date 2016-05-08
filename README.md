@@ -13,8 +13,7 @@ Znake was compiled using Pasmo:
 * Title screen
 
 ## Known issues
-* Food placement algorithm is too slow
-* Controls can be unresponsive when snake eats food
+* Food placement routine is too slow
 
 ## License
 See LICENSE
