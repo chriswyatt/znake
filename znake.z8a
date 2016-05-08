@@ -274,6 +274,8 @@ flags: db 0x01
 
 previous_frame_count: db 0x00
 
+frame_wait: db 0
+
 ; This random number generator is probably quite crappy. If the crappiness is
 ; observable from the food placement, we could look into improving this.
 rnd:
@@ -509,6 +511,18 @@ draw_left_border_next:
     ld (snake_history),a
     ld a,0x67
     ld (snake_history + 1),a
+
+    ; Set food eaten flag
+    ld hl,flags
+    set 0,(hl)
+
+    ; Snake speed (lower = faster)
+    ld a,10
+    ld (frame_wait),a
+
+    ; Needed for snake wait overrun check
+    ld a,(23672)
+    ld (previous_frame_count),a
 
     ; Draw initial snake graphics
 
@@ -845,6 +859,24 @@ create_food:
     ld hl,flags
     res 0,(hl)
 
+    ld hl,previous_frame_count
+    ld a,(23672)
+    sub (hl)
+
+    ld hl,frame_wait
+    sub (hl)
+
+    jr c,initiate_input_loop
+
+    ; Otherwise, food placement routine has taken too long, and we should have
+    ; moved the snake already. We will slow the snake down to reduce the chance
+    ; of this happening again.
+
+    ; Add 1 frame to the existing frame wait
+    ld a,(hl)
+    add a,1
+    ld (hl),a
+
 initiate_input_loop:
 
     ld a,(snake_direction_current)
@@ -1116,8 +1148,8 @@ next_input_loop:
     ld a,(23672)
     sub (hl)
 
-    ; Snake speed (lower = faster)
-    cp 10
+    ld hl,frame_wait
+    sub (hl)
 
     jp c,read_kempston_d
 
@@ -2176,10 +2208,6 @@ collision_with_snake:
     pop bc
 
 collision_with_border:
-
-    ; Set food eaten flag
-    ld hl,flags
-    set 0,(hl)
 
     jp start
 
