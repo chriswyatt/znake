@@ -573,26 +573,23 @@ next_snake_section:
     inc l
     ld c,l
 
-    ; Load second turn or head location to register h
-    ld h,(hl)
+    ; Load second turn or head location to register l
+    ld l,(hl)
 
     ; We need to take the lower location from the higher location; thus, we
-    ; need to sort them first.
+    ; need to sort them first. We will use registers h and l, as these have
+    ; become free
 
-    ; If the snake is going right or down, jump
-    cp h
-    jr c,positive_direction
+    ld h,a
+
+    ; If l > h, the snake is going right or down
+    cp l
+    jr c,check_no_overlap
 
     ; Otherwise, the snake is going left or up
 
+    ld h,l
     ld l,a
-
-    jp check_no_overlap
-
-positive_direction:
-
-    ld l,h
-    ld h,a
 
 check_no_overlap:
 
@@ -613,7 +610,7 @@ check_no_overlap:
     push af
 
     ; If A2x < B1x or A2y < B1y or B2x < A1x or B2y < A1y, no overlap.
-    ; All flags are or-ed, then half carry and carry flags are isolated using a
+    ; All flags are OR~d, then half carry and carry flags are isolated using a
     ; bitmask.
     pop hl
     ld a,l
