@@ -481,7 +481,7 @@ draw_left_border_next:
     set 0,(hl)
 
     ; Snake speed (lower = faster)
-    ld a,10
+    ld a,16
     ld (frame_wait),a
 
     ; Needed for snake wait overrun check
