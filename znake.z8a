@@ -267,7 +267,7 @@ current_food_location: db 0xab
 
 ; Bit 0: Food eaten
 ; Bits 1-7: Reserved
-flags: db 0x01
+flags: db 0x00
 
 previous_frame_count: db 0x00
 
@@ -289,7 +289,7 @@ random:
     and 31
     ld a,h
     ld h,a
-    
+
     ld a,(hl)
 
     inc hl
@@ -297,7 +297,7 @@ random:
 
     ret
 
-seed: defw 0
+seed: defw 0x0000
 
 modulo:
 
@@ -596,7 +596,7 @@ positive_direction:
 
 check_no_overlap:
 
-    ; Bottom-right of square (A2) 
+    ; Bottom-right of square (A2)
     ld a,e
 
     ; Minus tail/turn 1 (B1)
@@ -771,16 +771,11 @@ create_food:
     sub d
     ld h,a
 
-    ; X-coordinate
-
-    rrca
-    rrca
-    rrca
-    rrca
-    and 0x0f
-
     ; Random number limit
+    and 0x0f
     ld c,a
+
+    ; X-coordinate
 
     push hl
     call random
@@ -797,12 +792,6 @@ create_food:
     ld b,a
 
     ; Y-coordinate
-
-    ld a,h
-    and 0x0f
-
-    ; Random number limit
-    ld c,a
 
     push hl
     call random
@@ -2082,7 +2071,7 @@ update_graphics_init:
     ld hl,flags
     bit 0,(hl)
     halt
-    jp z,draw_tail
+    jr z,draw_tail
 
     ; Otherwise, loop 2 times to update grid locations: new head, existing head
 
