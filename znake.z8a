@@ -262,9 +262,6 @@ snake_direction_current: db 0x00
 ; (low bits have higher priority)
 snake_direction_queue: db 0x00
 
-; The previous location of the snake's food
-previous_food_location: db 0x00
-
 ; The current location of the snake's food
 current_food_location: db 0xab
 
@@ -276,83 +273,50 @@ previous_frame_count: db 0x00
 
 frame_wait: db 0
 
-; This random number generator is probably quite crappy. If the crappiness is
-; observable from the food placement, we could look into improving this.
-rnd:
+random:
 
-    ; If register b = 0, return
-    ld a,b
+; Simple pseudo-random number generator.
+; Steps a pointer through the ROM (held in seed), returning
+; the contents of the byte at that location
+
+; Modifies registers af and hl
+
+; (Lifted from How to Write ZX Spectrum Games 1.0 by Jonathan Cauldwell)
+
+    ld hl,(seed)
+
+    ; Keep it within first 8k of ROM.
+    and 31
+    ld a,h
+    ld h,a
+    
+    ld a,(hl)
+
+    inc hl
+    ld (seed),hl
+
+    ret
+
+seed: defw 0
+
+modulo:
+
+    ; Modifies registers af and bc
+
+    ; Return if divisor = 0
+    ld a,c
     or a
     ret z
 
-    ; Uses register b as the upper limit
+    ld a,b
 
-    push bc
-    push hl
+modulo_sub:
 
-    ; Frame counter
-    ld hl,0x5c78
+    sub c
 
-    ld a,(hl)
-    ld h,a
+    jr nc,modulo_sub
 
-    ; Shifting between 0-7 times should be reasonable
-    and 0x07
-
-    ; Counter
-    ld c,a
-
-    ; Load random number back into register a, so we can rotate it
-    ld a,h
-
-rotate_rnd_num:
-
-    rlca
-
-    dec c
-    jr nz,rotate_rnd_num
-
-    ld h,a
-
-    ; Add old snake history
-    ld a,(snake_history)
-    add a,h
-    ld h,a
-
-    ; Add current food location
-    ld a,(current_food_location)
-    add a,h
-    ld h,a
-
-    ; Add previous food location
-    ld a,(previous_food_location)
-    add a,h
-
-    ; Compare the result to the upper limit
-    cp b
-
-    ; If within range, jump out of loop
-    jp c,rnd_end
-
-    ; Otherwise, try and xor
-    xor 0xff
-
-    ; Compare the result to the upper limit
-    cp b
-
-    ; If within range, jump out of loop
-    jr c,rnd_end
-
-rnd_loop:
-
-    sla a
-    cp b
-    jr nc,rnd_loop
-
-rnd_end:
-
-    pop hl
-    pop bc
+    add a,c
     ret
 
 start:
@@ -517,7 +481,7 @@ draw_left_border_next:
     set 0,(hl)
 
     ; Snake speed (lower = faster)
-    ld a,10
+    ld a,20
     ld (frame_wait),a
 
     ; Needed for snake wait overrun check
@@ -794,15 +758,22 @@ return_to_parent_quadrant:
 
 create_food:
 
-    ld a,(current_food_location)
-    ld (previous_food_location),a
-
     ; Pick a random free square
 
     ld a,(free_squares_length)
+
+    ; Skip food generation if snake has filled the screen
+    ; (TODO: End game with congratulatory message)
+    or a
+    jp z,initiate_input_loop
+
+    call random
     ld b,a
 
-    call rnd
+    ; Random number limit
+    ld c,a
+
+    call modulo
     ld l,a
 
     ld h,(free_squares_tl >> 8) & $FF
@@ -811,25 +782,58 @@ create_food:
     ld h,(free_squares_br >> 8) & $FF
     ld e,(hl)
 
-    ; Pick a random position within the free square. Ideally, we would reseed
-    ; the random generator (TODO).
+    ; Pick a random position within the free square
 
+    ; Load square width/height to register h
     ld a,e
     sub d
     ld h,a
 
+    ; X-coordinate
+
+    rrca
+    rrca
+    rrca
+    rrca
+    and 0x0f
+
+    push hl
+    call random
+    pop hl
+
+    ; Random number limit
+    ld c,a
+
+    ld b,a
+    call modulo
+
+    rlca
+    rlca
+    rlca
+    rlca
     and 0xf0
     ld b,a
-    call rnd
-    and 0xf0
-    ld c,a
+
+    ; Y-coordinate
 
     ld a,h
     and 0x0f
-    ld b,a
-    call rnd
-    or c
+    ld c,a
 
+    push hl
+    call random
+    pop hl
+
+    ; Random number limit
+    ld c,a
+
+    push bc
+    call modulo
+    pop bc
+
+    or b
+
+    ; Add location of top-left of square, to get the actual food location
     add a,d
 
     ld (current_food_location),a
