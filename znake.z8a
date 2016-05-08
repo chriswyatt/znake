@@ -607,15 +607,6 @@ check_no_overlap:
     sub h
 
     push af
-    pop bc
-
-    ; If A2x < B1x or A2y < B2y, no overlap
-    ; Half carry and carry flags are checked
-    ld a,c
-    and 0x11
-
-    ; Store result in register h
-    ld h,a
 
     ; Tail/turn 2 (B2)
     ld a,l
@@ -624,14 +615,15 @@ check_no_overlap:
     sub d
 
     push af
+
+    ; If A2x < B1x or A2y < B1y or B2x < A1x or B2y < A1y, no overlap.
+    ; All flags are or-ed, then half carry and carry flags are isolated using a
+    ; bitmask.
     pop bc
-
-    ; If B2x < A1x or B2y < A1y, no overlap
-    ; Half carry and carry flags are checked
     ld a,c
+    pop bc
+    or c
     and 0x11
-
-    or h
 
     jr z,overlap
 
