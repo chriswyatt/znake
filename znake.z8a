@@ -481,7 +481,7 @@ draw_left_border_next:
     set 0,(hl)
 
     ; Snake speed (lower = faster)
-    ld a,20
+    ld a,8
     ld (frame_wait),a
 
     ; Needed for snake wait overrun check
@@ -573,30 +573,26 @@ next_snake_section:
     inc l
     ld c,l
 
-    ; Push counter and snake history offset to register
-    push bc
-
-    ; Load second turn or head location to register c
-    ld c,(hl)
+    ; Load second turn or head location to register h
+    ld h,(hl)
 
     ; We need to take the lower location from the higher location; thus, we
     ; need to sort them first.
 
     ; If the snake is going right or down, jump
-    cp c
+    cp h
     jr c,positive_direction
 
     ; Otherwise, the snake is going left or up
 
-    ld h,c
     ld l,a
 
     jp check_no_overlap
 
 positive_direction:
 
+    ld l,h
     ld h,a
-    ld l,c
 
 check_no_overlap:
 
@@ -619,18 +615,15 @@ check_no_overlap:
     ; If A2x < B1x or A2y < B1y or B2x < A1x or B2y < A1y, no overlap.
     ; All flags are or-ed, then half carry and carry flags are isolated using a
     ; bitmask.
-    pop bc
-    ld a,c
-    pop bc
-    or c
+    pop hl
+    ld a,l
+    pop hl
+    or l
     and 0x11
 
     jr z,overlap
 
 no_overlap:
-
-    ; Pop counter and snake history offset from register
-    pop bc
 
     ld h,(snake_history >> 8) & $FF
     ld l,c
@@ -657,9 +650,6 @@ no_overlap:
     jp next_quadrant
 
 overlap:
-
-    ; Pop counter and snake history offset from register (no longer needed)
-    pop bc
 
     ; Cannot divide square (i.e. 1 pixel)
     ld a,e
