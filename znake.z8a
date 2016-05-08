@@ -767,11 +767,11 @@ create_food:
     or a
     jp z,initiate_input_loop
 
-    call random
-    ld b,a
-
     ; Random number limit
     ld c,a
+
+    call random
+    ld b,a
 
     call modulo
     ld l,a
@@ -797,12 +797,12 @@ create_food:
     rrca
     and 0x0f
 
+    ; Random number limit
+    ld c,a
+
     push hl
     call random
     pop hl
-
-    ; Random number limit
-    ld c,a
 
     ld b,a
     call modulo
@@ -818,14 +818,13 @@ create_food:
 
     ld a,h
     and 0x0f
+
+    ; Random number limit
     ld c,a
 
     push hl
     call random
     pop hl
-
-    ; Random number limit
-    ld c,a
 
     push bc
     call modulo
