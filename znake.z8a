@@ -273,6 +273,9 @@ previous_frame_count: db 0x00
 
 frame_wait: db 0
 
+; Calculating this from snake_history would be too expensive
+snake_length: db 0
+
 random:
 
 ; Simple pseudo-random number generator.
@@ -476,6 +479,9 @@ draw_left_border_next:
     ld a,0x67
     ld (snake_history + 1),a
 
+    ld a,3
+    ld (snake_length),a
+
     ; Set food eaten flag
     ld hl,flags
     set 0,(hl)
@@ -527,7 +533,7 @@ next_game_loop:
 ; free squares tables; any quadrant that does contain snake is further divided
 ; into quadrants until all free space is mapped.
 
-calculate_new_food_location:
+    ; Calculate new food location
 
     ; Initialise tables
     xor a ; a = 0
@@ -1610,6 +1616,10 @@ check_food_eaten:
     ; Otherwise, set food eaten flag ...
     ld hl,flags
     set 0,(hl)
+
+    ; Record snake length increase
+    ld hl,snake_length
+    inc (hl)
 
     ; Skip tail update (i.e. grow snake)
     jp collision_detection
