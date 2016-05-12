@@ -322,6 +322,249 @@ modulo_sub:
     add a,c
     ret
 
+draw_char:
+
+; Takes column/row (bc) and pointer (hl) and draws a character to the display
+; buffer
+
+    ; Get the memory location of the first line of a character
+
+    ; Calculate high byte of display location
+
+    ; The high byte represents the display section and line number (which is
+    ; added later on)
+
+    ld a,e
+
+    ; Discard all but bits 3 and 4. Taken in isolation, these are the offsets
+    ; for the display section, specifically 0x00, 0x08 and 0x10
+    and 0x18 ;
+
+    ; The high byte for the first line of each character is either 0x40, 0x48
+    ; or 0x50, depending on which section it recides in
+    add a,0x40
+
+    ld b,a
+
+    ; Calculate low byte of display location
+
+    ; The low byte represents row and column numbers
+
+    ld a,e
+
+    ; This calculates the row number grouped by display section, i.e.:
+    ; row 0 = 0x00, row 1 = 0x20, row 7 = 0xE0, row 8 = 0x00, etc.
+    rlca
+    rlca
+    rlca
+    rlca
+    rlca
+    and 0xf0
+
+    ; The first line of each column is offset by a byte
+    add a,d
+
+    ld d,b
+    ld e,a
+
+    ; A character has 8 lines
+    ld b,8
+
+draw_line:
+
+; Draw a character line by line
+
+    ld a,(hl)
+    ld (de),a
+    inc l
+
+    ; The high byte is incremented to get the destination of the next line
+    inc d
+
+    djnz draw_line
+
+    ret
+
+check_quadrant:
+
+    push de
+    push bc
+
+    ; Set register d to the location of the top-left corner
+    ld a,d
+    add a,e
+    ld d,a
+
+    ; Set register e to the location of the bottom-right corner
+    ld a,d
+    add a,b
+    ld e,a
+
+    ld h,(snake_history >> 8) & $FF
+
+    ld a,(snake_history_tail_offset)
+    ld l,a
+
+    ; Initialise counter
+    ld a,(snake_history_head_offset)
+    sub l
+    ld b,a
+
+next_snake_section:
+
+    ; Load first turn or tail location to register a
+    ld a,(hl)
+
+    inc l
+    ld c,l
+
+    ; Load second turn or head location to register l
+    ld l,(hl)
+
+    ; We need to take the lower location from the higher location; thus, we
+    ; need to sort them first. We will use registers h and l, as these have
+    ; become free
+
+    ld h,a
+
+    ; If l > h, the snake is going right or down
+    cp l
+    jr c,check_no_overlap
+
+    ; Otherwise, the snake is going left or up
+
+    ld h,l
+    ld l,a
+
+check_no_overlap:
+
+    ; Bottom-right of square (A2)
+    ld a,e
+
+    ; Minus tail/turn 1 (B1)
+    sub h
+
+    push af
+
+    ; Tail/turn 2 (B2)
+    ld a,l
+
+    ; Minus top-left of square (A1)
+    sub d
+
+    push af
+
+    ; If A2x < B1x or A2y < B1y or B2x < A1x or B2y < A1y, no overlap.
+    ; All flags are OR~d, then half carry and carry flags are isolated using a
+    ; bitmask.
+    pop hl
+    ld a,l
+    pop hl
+    or l
+    and 0x11
+
+    jr z,overlap
+
+no_overlap:
+
+    ld h,(snake_history >> 8) & $FF
+    ld l,c
+
+    ; Check if the next section of snake overlaps this quadrant
+    djnz next_snake_section
+
+    ; Otherwise, add this quadrant to the free squares tables
+
+    ld a,(free_squares_length)
+    ld l,a
+
+    ld h,(free_squares_tl >> 8) & $FF
+
+    ld (hl),d
+
+    ld h,(free_squares_br >> 8) & $FF
+
+    ld (hl),e
+
+    inc a
+    ld (free_squares_length),a
+
+    jp next_quadrant
+
+overlap:
+
+    ; Cannot divide square (i.e. 1 pixel)
+    ld a,e
+    sub d
+    jr z,next_quadrant
+
+    ; Load the location of the bottom-right of the top-left quadrant to
+    ; register b
+    add a,0x11
+    rra
+    ld e,a
+    sub 0x11
+    ld b,a
+
+    ; Load the offset to the bottom-left quadrant to register e
+    ld a,e
+    and 0x0f
+    ld e,a
+
+    ; Check quadrants within this quadrant
+    call check_quadrant
+
+next_quadrant:
+
+    ; Pop offset to bottom-right of quadrant from the stack
+    pop bc
+
+    ; Pop location of top-left quadrant and offset to bottom-left quadrant
+    ; from the stack
+    pop de
+
+    ld a,e
+
+    ; If top-left or bottom-right quadrant, jump
+    or a
+    jp pe,top_left_or_bottom_right
+
+    ; Otherwise, top-right or bottom-left quadrant
+
+    ; If top-right, jump
+    and 0x0f
+    jr z,top_right
+
+    ; Otherwise, bottom-left
+
+    rlca
+    rlca
+    rlca
+    rlca
+    or e
+    ld e,a
+
+    jp check_quadrant
+
+top_right:
+
+    ld e,0x00
+
+    jp check_quadrant
+
+top_left_or_bottom_right:
+
+    ; If top-left, return
+    ret z
+
+    ; Otherwise, bottom-right
+
+    ld a,e
+    and 0xf0
+    ld e,a
+
+    jp check_quadrant
+
 start:
 
     ; Initialise our own interrupt routine
@@ -546,194 +789,7 @@ next_game_loop:
     ; Load offset to bottom-right of quadrants to register b
     ld b,0x77
 
-check_quadrant:
-
-    push de
-    push bc
-
-    ; Set register d to the location of the top-left corner
-    ld a,d
-    add a,e
-    ld d,a
-
-    ; Set register e to the location of the bottom-right corner
-    ld a,d
-    add a,b
-    ld e,a
-
-    ld h,(snake_history >> 8) & $FF
-
-    ld a,(snake_history_tail_offset)
-    ld l,a
-
-    ; Initialise counter
-    ld a,(snake_history_head_offset)
-    sub l
-    ld b,a
-
-next_snake_section:
-
-    ; Load first turn or tail location to register a
-    ld a,(hl)
-
-    inc l
-    ld c,l
-
-    ; Load second turn or head location to register l
-    ld l,(hl)
-
-    ; We need to take the lower location from the higher location; thus, we
-    ; need to sort them first. We will use registers h and l, as these have
-    ; become free
-
-    ld h,a
-
-    ; If l > h, the snake is going right or down
-    cp l
-    jr c,check_no_overlap
-
-    ; Otherwise, the snake is going left or up
-
-    ld h,l
-    ld l,a
-
-check_no_overlap:
-
-    ; Bottom-right of square (A2)
-    ld a,e
-
-    ; Minus tail/turn 1 (B1)
-    sub h
-
-    push af
-
-    ; Tail/turn 2 (B2)
-    ld a,l
-
-    ; Minus top-left of square (A1)
-    sub d
-
-    push af
-
-    ; If A2x < B1x or A2y < B1y or B2x < A1x or B2y < A1y, no overlap.
-    ; All flags are OR~d, then half carry and carry flags are isolated using a
-    ; bitmask.
-    pop hl
-    ld a,l
-    pop hl
-    or l
-    and 0x11
-
-    jr z,overlap
-
-no_overlap:
-
-    ld h,(snake_history >> 8) & $FF
-    ld l,c
-
-    ; Check if the next section of snake overlaps this quadrant
-    djnz next_snake_section
-
-    ; Otherwise, add this quadrant to the free squares tables
-
-    ld a,(free_squares_length)
-    ld l,a
-
-    ld h,(free_squares_tl >> 8) & $FF
-
-    ld (hl),d
-
-    ld h,(free_squares_br >> 8) & $FF
-
-    ld (hl),e
-
-    inc a
-    ld (free_squares_length),a
-
-    jp next_quadrant
-
-overlap:
-
-    ; Cannot divide square (i.e. 1 pixel)
-    ld a,e
-    sub d
-    jr z,next_quadrant
-
-    ; Load the location of the bottom-right of the top-left quadrant to
-    ; register b
-    add a,0x11
-    rra
-    ld e,a
-    sub 0x11
-    ld b,a
-
-    ; Load the offset to the bottom-left quadrant to register e
-    ld a,e
-    and 0x0f
-    ld e,a
-
-    ; Check quadrants within this quadrant
     call check_quadrant
-
-next_quadrant:
-
-    ; Pop offset to bottom-right of quadrant from the stack
-    pop bc
-
-    ; Pop location of top-left quadrant and offset to bottom-left quadrant
-    ; from the stack
-    pop de
-
-    ld a,e
-
-    ; If top-left or bottom-right quadrant, jump
-    or a
-    jp pe,top_left_or_bottom_right
-
-    ; Otherwise, top-right or bottom-left quadrant
-
-    ; If top-right, jump
-    and 0x0f
-    jr z,top_right
-
-    ; Otherwise, bottom-left
-
-    rlca
-    rlca
-    rlca
-    rlca
-    or e
-    ld e,a
-
-    jp check_quadrant
-
-top_right:
-
-    ld e,0x00
-
-    jp check_quadrant
-
-top_left_or_bottom_right:
-
-    ; If top-left, jump
-    jr z,top_left
-
-    ; Otherwise, bottom-right
-
-    ld a,e
-    and 0xf0
-    ld e,a
-
-    jp check_quadrant
-
-top_left:
-
-    ; If b = 0x77 and d = 0x00, there are no more quadrants to check
-
-    ld a,b
-    add a,d
-    sub 0x77
-    ret nz
 
 create_food:
 
@@ -2114,67 +2170,6 @@ update_graphics:
 update_graphics_end:
 
     jp next_game_loop
-
-; Takes column/row (bc) and pointer (hl) and draws a character to the display
-; buffer
-draw_char:
-
-    ; Get the memory location of the first line of a character
-
-    ; Calculate high byte of display location
-
-    ; The high byte represents the display section and line number (which is
-    ; added later on)
-
-    ld a,e
-
-    ; Discard all but bits 3 and 4. Taken in isolation, these are the offsets
-    ; for the display section, specifically 0x00, 0x08 and 0x10
-    and 0x18 ;
-
-    ; The high byte for the first line of each character is either 0x40, 0x48
-    ; or 0x50, depending on which section it recides in
-    add a,0x40
-
-    ld b,a
-
-    ; Calculate low byte of display location
-
-    ; The low byte represents row and column numbers
-
-    ld a,e
-
-    ; This calculates the row number grouped by display section, i.e.:
-    ; row 0 = 0x00, row 1 = 0x20, row 7 = 0xE0, row 8 = 0x00, etc.
-    rlca
-    rlca
-    rlca
-    rlca
-    rlca
-    and 0xf0
-
-    ; The first line of each column is offset by a byte
-    add a,d
-
-    ld d,b
-    ld e,a
-
-    ; A character has 8 lines
-    ld b,8
-
-; Draw a character line by line
-draw_line:
-
-    ld a,(hl)
-    ld (de),a
-    inc l
-
-    ; The high byte is incremented to get the destination of the next line
-    inc d
-
-    djnz draw_line
-
-    ret
 
 collision_with_snake:
 
