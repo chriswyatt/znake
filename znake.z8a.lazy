@@ -539,6 +539,12 @@ next_game_loop:
     xor a ; a = 0
     ld (free_squares_length),a
 
+    ; Once the snake starts getting really huge, the normal free space routine
+    ; starts to become inefficient
+    ld a,(snake_length)
+    sub 5
+    jp nc,lazy_free_space_check
+
     ; d: location of top-left quadrant
     ; e: offset to bottom-left quadrant / width / height
     ld de,0x0008
@@ -728,12 +734,35 @@ top_left_or_bottom_right:
 
 top_left:
 
-    ; If b = 0x77 and d = 0x00, there are no more quadrants to check
-
+    ld a,d
+    or a
+    jr nz,return_to_parent_quadrant
     ld a,b
-    add a,d
-    sub 0x77
-    ret nz
+    cp 0x77
+    jr nz,return_to_parent_quadrant
+
+    jr create_food
+
+return_to_parent_quadrant:
+
+    ret
+
+lazy_free_space_check:
+
+    ; d: location of top-left quadrant
+    ; e: offset to bottom-left quadrant / width / height
+    ld de,0xff00
+
+lazy_free_space_check_next:
+
+    ; Load offset to bottom-right of quadrants to register b
+    ld b,0x00
+
+    push de
+    call check_quadrant
+    pop de
+    dec d
+    jr nc,lazy_free_space_check_next
 
 create_food:
 
@@ -823,6 +852,7 @@ create_food:
     add a,4
     ld e,a
 
+    halt
     call draw_char
 
     ; Reset food eaten flag
@@ -2070,6 +2100,7 @@ update_graphics_init:
 
     ld hl,flags
     bit 0,(hl)
+    halt
     jr z,draw_tail
 
     ; Otherwise, loop 2 times to update grid locations: new head, existing head
