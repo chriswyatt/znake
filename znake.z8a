@@ -2141,7 +2141,7 @@ draw_tail:
 update_graphics:
 
     dec c
-    jp z,update_graphics_end
+    jp z,next_game_loop
 
     pop hl
 
@@ -2167,10 +2167,6 @@ update_graphics:
 
     jp update_graphics
 
-update_graphics_end:
-
-    jp next_game_loop
-
 collision_with_snake:
 
     pop bc
@@ -2182,8 +2178,6 @@ collision_with_border:
 org 0x9090
 
 ; Interrupt routine.
-
-    di
 
     push af
     push bc
