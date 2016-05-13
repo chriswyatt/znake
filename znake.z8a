@@ -385,10 +385,20 @@ draw_line:
 
     ret
 
+check_quadrants:
+
+    ld a,e
+    rlca
+    rlca
+    rlca
+    rlca
+    or e
+    sub 0x11
+    ld b,a
+
 check_quadrant:
 
     push de
-    push bc
 
     ; Set register d to the location of the top-left corner
     ld a,d
@@ -498,16 +508,14 @@ overlap:
     sub d
     jr z,next_quadrant
 
-    ; Load the location of the bottom-right of the top-left quadrant to
-    ; register b
+    ; Load the offset to the bottom-right of the top-left quadrant to register
+    ; b
+    ; Load the offset to the bottom-left quadrant to register e
     add a,0x11
-    rra
-    ld e,a
+    rrca
     sub 0x11
     ld b,a
-
-    ; Load the offset to the bottom-left quadrant to register e
-    ld a,e
+    add 0x11
     and 0x0f
     ld e,a
 
@@ -515,9 +523,6 @@ overlap:
     call check_quadrant
 
 next_quadrant:
-
-    ; Pop offset to bottom-right of quadrant from the stack
-    pop bc
 
     ; Pop location of top-left quadrant and offset to bottom-left quadrant
     ; from the stack
@@ -544,9 +549,21 @@ next_quadrant:
     or e
     ld e,a
 
+    sub 0x11
+    ld b,a
+
     jp check_quadrant
 
 top_right:
+
+    ld a,e
+    rrca
+    rrca
+    rrca
+    rrca
+    or e
+    sub 0x11
+    ld b,a
 
     ld e,0x00
 
@@ -558,6 +575,9 @@ top_left_or_bottom_right:
     ret z
 
     ; Otherwise, bottom-right
+
+    sub 0x11
+    ld b,a
 
     ld a,e
     and 0xf0
@@ -730,7 +750,7 @@ draw_left_border_next:
     set 0,(hl)
 
     ; Snake speed (lower = faster)
-    ld a,16
+    ld a,10
     ld (frame_wait),a
 
     ; Needed for snake wait overrun check
@@ -786,10 +806,7 @@ next_game_loop:
     ; e: offset to bottom-left quadrant / width / height
     ld de,0x0008
 
-    ; Load offset to bottom-right of quadrants to register b
-    ld b,0x77
-
-    call check_quadrant
+    call check_quadrants
 
 create_food:
 
