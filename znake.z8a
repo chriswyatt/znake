@@ -276,6 +276,9 @@ frame_wait: db 0
 ; Calculating this from snake_history would be too expensive
 snake_length: db 0
 
+; Stack pointer backup
+sp_bak: defw 0x0000
+
 random:
 
 ; Simple pseudo-random number generator.
@@ -606,13 +609,19 @@ top_left_or_bottom_right:
     jp check_quadrant
 
 start:
+    di
+    
+    ld (sp_bak),sp
 
     ; Initialise our own interrupt routine
-    di
     ld a,0x91
     ld i,a
     im 2
     ei
+
+restart:
+
+    ld sp,(sp_bak)
 
     ; Set border color to black
     xor a ; a = 0
@@ -1315,6 +1324,12 @@ head_moving_up:
     ; Get head location again and shift it up
     dec b
 
+    ; Collision with border
+    ld a,b
+    xor e
+    and 0xf0
+    jp nz,restart
+
     ; Low bit of graphics
     ld c,0x08
 
@@ -1351,6 +1366,9 @@ head_moving_right:
     ; Get head location again and shift it right
     ld a,b
     add a,0x10
+
+    ; Collision with border
+    jp c,restart
 
     ; Update the existing head location in our table
     ld (hl),a
@@ -1391,6 +1409,12 @@ head_moving_down:
     ; Get head location again and shift it down
     inc b
 
+    ; Collision with border
+    ld a,b
+    xor e
+    and 0xf0
+    jp nz,restart
+
     ; Low bit of graphics
     ld c,0x18
 
@@ -1428,6 +1452,9 @@ head_moving_left:
     ld a,b
     sub 0x10
 
+    ; Collision with border
+    jp c,restart
+
     ; Update the existing head location in our table
     ld (hl),a
 
@@ -1453,6 +1480,9 @@ head_turning_up_right:
     ; Get head location again and shift it right
     ld a,b
     add a,0x10
+
+    ; Collision with border
+    jp c,restart
 
     ; Push new head location back to b register
     ld b,a
@@ -1486,6 +1516,12 @@ head_turning_right_up:
     ; Get head location again and shift it up
     dec b
 
+    ; Collision with border
+    ld a,b
+    xor e
+    and 0xf0
+    jp nz,restart
+
     ; Low bit of graphics
     ld c,0x08
 
@@ -1514,6 +1550,12 @@ head_turning_right_down:
 
     ; Get head location again and shift it down
     inc b
+
+    ; Collision with border
+    ld a,b
+    xor e
+    and 0xf0
+    jp nz,restart
 
     ; Low bit of graphics
     ld c,0x18
@@ -1545,6 +1587,9 @@ head_turning_down_right:
     ; Get head location again and shift it right
     ld a,b
     add a,0x10
+
+    ; Collision with border
+    jp c,restart
 
     ; Push new head location back to b register
     ld b,a
@@ -1579,6 +1624,9 @@ head_turning_down_left:
     ld a,b
     sub 0x10
 
+    ; Collision with border
+    jp c,restart
+
     ; Push new head location back to b register
     ld b,a
 
@@ -1611,6 +1659,12 @@ head_turning_left_down:
     ; Get head location again and shift it down
     inc b
 
+    ; Collision with border
+    ld a,b
+    xor e
+    and 0xf0
+    jp nz,restart
+
     ; Low bit of graphics
     ld c,0x18
 
@@ -1639,6 +1693,12 @@ head_turning_left_up:
 
     ; Get head location again and shift it up
     dec b
+
+    ; Collision with border
+    ld a,b
+    xor e
+    and 0xf0
+    jp nz,restart
 
     ; Low bit of graphics
     ld c,0x08
@@ -1670,6 +1730,9 @@ head_turning_up_left:
     ; Get head location again and shift it left
     ld a,b
     sub 0x10
+
+    ; Collision with border
+    jp c,restart
 
     ; Push new head location back to b register
     ld b,a
@@ -1945,216 +2008,122 @@ new_tail_moving_left:
 
 collision_detection:
 
-    ; TODO: More comments for collision detection routine
+    ld h,(snake_history >> 8) & $FF
 
-    ld hl,snake_history
-
-    ; Temporarily store tail offset in register b
     ld a,(snake_history_tail_offset)
     ld b,a
 
-    ; Load the head offset to the l register
     ld a,(snake_history_head_offset)
     ld l,a
 
     ; Initialise counter
     sub b
-    inc a
     ld b,a
 
-    ; Location of head
-    ld c,(hl)
-
-    ; Loop expects current head location in register d
-    ld d,c
-
+    ; Load current snake direction to register e
     ld a,(snake_direction_current)
-    or a
-    bit 3,a
-    jp nz,neck_to_bottom
-    bit 0,a
-    jp nz,neck_to_left
-    bit 2,a
-    jp nz,neck_to_top
+    ld e,a
 
-    ; neck to right
+    ; Load head location to register c (A)
+    ld a,(hl)
+    ld c,a
 
-    ld a,d
+    ; Load neck location to register d (B1)
+
+    bit 0,e
+    jr nz,head_right_of_neck
+    bit 1,e
+    jr nz,head_left_of_neck
+    bit 2,e
+    jr nz,head_below_neck
+
+head_above_neck:
+
+    inc a
+
+    jp collision_detection_first_section
+
+head_below_neck:
+
+    dec a
+
+    jp collision_detection_first_section
+
+head_left_of_neck:
 
     add a,0x10
-    jp c,collision_with_border
 
-    ld d,a
+    jp collision_detection_first_section
 
-    jp collision_detection_loop
-
-neck_to_bottom:
-
-    ld a,d
-
-    and 0x0f
-    inc a
-    bit 4,a
-    jp nz,collision_with_border
-
-    ld a,d
-    inc a
-    ld d,a
-
-    jp collision_detection_loop
-
-neck_to_left:
-
-    ld a,d
+head_right_of_neck:
 
     sub 0x10
-    jp c,collision_with_border
+
+collision_detection_first_section:
 
     ld d,a
 
-    jp collision_detection_loop
-
-neck_to_top:
-
-    ld a,d
-
-    and 0x0f
-    dec a
-    bit 4,a
-    jp nz,collision_with_border
-
-    ld a,d
-    dec a
-    ld d,a
-
-collision_detection_loop:
+collision_detection_next_snake_section:
 
     dec l
-    dec b
-    jp z,update_graphics_init
 
-    ; Push counter to stack
-    push bc
+    ; Load second turn or tail location to register e (B2)
+    ld a,(hl)
+    ld e,a
 
-    ; Load previous location to register e
+    cp d
+    jr nc,second_turn_higher
+
     ld e,d
+    ld d,a
 
-    ; Load current location to register d
+second_turn_higher:
+
+    ld a,c
+    cp d
+
+    ; If carry, B1x > Ax or B1y > Ay
+    ; (B1y > Ay only detected in certain edge cases, which is why we
+    ;  isolate the Y nibble in the next check)
+    jr c,no_collision
+
+    ld a,d
+    and 0x0f
+    ld d,a
+    ld a,c
+    and 0x0f
+    sub d
+
+    ; If carry, B1y > Ay
+    jr c,no_collision
+
+    ld a,e
+    cp c
+
+    ; If carry, Ax > B2x or Ay > B2y
+    ; (Ax > B2y only detected in certain edge cases, which is why we
+    ;  isolate the Y nibble in the next check)
+    jr c,no_collision
+
+    ; Isolate Y nibble
+    ld a,c
+    and 0x0f
+    ld d,a
+    ld a,e
+    and 0x0f
+    sub d
+
+    ; If carry, Ay > B2y
+    jr c,no_collision
+
+    ; Collision
+    jp restart
+
+no_collision:
+
     ld d,(hl)
 
-    ld a,c
-    and 0xf0
-    ld b,a
-    ld a,d
-    and 0xf0
-    cp b
-    jp z,on_same_x_axis
-
-    ld a,c
-    and 0x0f
-    ld b,a
-    ld a,d
-    and 0x0f
-    cp b
-    jp z,on_same_y_axis
-
-    jp collision_detection_loop_continue
-
-on_same_x_axis:
-
-    ld a,c
-    and 0x0f
-    ld b,a
-    ld a,d
-    and 0x0f
-    cp b
-    jp c,head_below_current_turn_axis_y
-    jp nz,head_above_current_turn_axis_y
-
-    ; Head at current turn (axis y)
-
-    ; Collision
-    jp collision_with_snake
-
-head_below_current_turn_axis_y:
-
-    ld a,c
-    and 0x0f
-    ld b,a
-    ld a,e
-    and 0x0f
-    cp b
-    jp c,collision_detection_loop_continue
-
-    ; Collision
-    jp collision_with_snake
-
-head_above_current_turn_axis_y:
-
-    ld a,c
-    and 0x0f
-    ld b,a
-    ld a,e
-    and 0x0f
-    cp b
-    jp nc,collision_detection_loop_continue
-
-    ; Collision
-    jp collision_with_snake
-
-on_same_y_axis:
-
-    ld a,c
-    and 0xf0
-    ld b,a
-    ld a,d
-    and 0xf0
-    cp b
-    jp c,head_right_of_current_turn_axis_x
-    jp nz,head_left_of_current_turn_axis_x
-
-    ; Head at current turn (axis x)
-
-    ; Collision
-    jp collision_with_snake
-
-head_left_of_current_turn_axis_x:
-
-    ld a,c
-    and 0xf0
-    ld b,a
-    ld a,e
-    and 0xf0
-    cp b
-    jp nc,collision_detection_loop_continue
-
-    ; Collision
-    jp collision_with_snake
-
-head_right_of_current_turn_axis_x:
-
-    ld a,c
-    and 0xf0
-    ld b,a
-    ld a,e
-    and 0xf0
-    cp b
-    jp c,collision_detection_loop_continue
-
-    ; Collision
-    jp collision_with_snake
-
-collision_detection_loop_continue:
-
-    ; Pop counter from stack
-    pop bc
-
-    jp collision_detection_loop
-
-collision_detection_loop_end
-
-    ; Pop counter from stack
-    pop bc
+    djnz collision_detection_next_snake_section
 
 update_graphics_init:
 
@@ -2203,14 +2172,6 @@ update_graphics:
     call draw_char
 
     jp update_graphics
-
-collision_with_snake:
-
-    pop bc
-
-collision_with_border:
-
-    jp start
 
 org 0x9090
 
