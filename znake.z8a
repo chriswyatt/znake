@@ -263,7 +263,7 @@ snake_direction_current: db 0x00
 snake_direction_queue: db 0x00
 
 ; The current location of the snake's food
-current_food_location: db 0xab
+current_food_location: db 0x00
 
 ; Bit 0: Food eaten
 ; Bits 1-7: Reserved
@@ -452,28 +452,71 @@ check_no_overlap:
     ld a,e
 
     ; Minus tail/turn 1 (B1)
+    cp h
+
+    ; If carry, B1x > A2x or B1y > A2y
+    ; (B1y > A2y only detected in certain edge cases, which is why we
+    ;  isolate the Y nibble in the next check)
+    jr c,no_overlap
+
+    ; Isolate Y nibble
+    ld a,h
+    and 0x0f
+    ld h,a
+    ld a,e
+    and 0x0f
     sub h
 
-    push af
+    ; If carry, B1y < A2y
+    jr c,no_overlap
 
     ; Tail/turn 2 (B2)
     ld a,l
 
     ; Minus top-left of square (A1)
-    sub d
+    cp d
 
-    push af
+    ; If carry, A1x > B2x or A1y > B2y
+    ; (A1y > B2y only detected in certain edge cases, which is why we
+    ;  isolate the Y nibble in the next check)
+    jr c,no_overlap
 
-    ; If A2x < B1x or A2y < B1y or B2x < A1x or B2y < A1y, no overlap.
-    ; All flags are OR~d, then half carry and carry flags are isolated using a
-    ; bitmask.
-    pop hl
+    ; Isolate Y nibble
+    and 0x0f
+    ld l,a
+    ld a,d
+    and 0x0f
+    ld h,a
     ld a,l
-    pop hl
-    or l
-    and 0x11
+    sub h
 
-    jr z,overlap
+    ; If carry, A1y > B2y
+    jr c,no_overlap
+
+overlap:
+
+    ; Cannot divide square (i.e. 1 pixel)
+    ld a,e
+    sub d
+    jr z,next_quadrant
+
+    ; Load the offset to the bottom-right of the top-left quadrant to register
+    ; b
+    add a,0x11
+    rrca
+    ld e,a
+    sub 0x11
+    ld b,a
+
+    ; Load the offset to the bottom-left quadrant to register e
+    ld a,e
+    and 0x0f
+    ld e,a
+
+    ; Check quadrants within this quadrant
+    call check_quadrant
+
+    jp next_quadrant
 
 no_overlap:
 
@@ -498,29 +541,6 @@ no_overlap:
 
     inc a
     ld (free_squares_length),a
-
-    jp next_quadrant
-
-overlap:
-
-    ; Cannot divide square (i.e. 1 pixel)
-    ld a,e
-    sub d
-    jr z,next_quadrant
-
-    ; Load the offset to the bottom-right of the top-left quadrant to register
-    ; b
-    ; Load the offset to the bottom-left quadrant to register e
-    add a,0x11
-    rrca
-    sub 0x11
-    ld b,a
-    add 0x11
-    and 0x0f
-    ld e,a
-
-    ; Check quadrants within this quadrant
-    call check_quadrant
 
 next_quadrant:
 
