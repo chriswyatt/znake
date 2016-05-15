@@ -1271,11 +1271,10 @@ update_head_history:
     ld a,e
     ld (snake_direction_queue),a
 
-    ; Move pointer to end of snake history
+    ld h,(snake_history >> 8) & $FF
 
+    ; Move pointer to end of snake history
     ld a,(snake_history_head_offset)
-    ld hl,snake_history
-    add a,l
     ld l,a
 
     ; Load current head location to register e
@@ -1291,33 +1290,40 @@ update_head_history:
     inc l
 
     ; Subtract turn location from head location
+
     ld a,e
-    sub b
+    xor b
+    cp 16
+    jr c,head_moving_vertically
 
-    ; Load result and flags to bc
-    push af
-    pop bc
+    ; Head moving horizontally
 
-    ; If half carry
-    bit 4,c
-    jr nz,head_moving_up
+    ; Restore head location
+    xor b
 
-    ; If carry
-    bit 0,c
-    jr nz,head_moving_left
-
-    ; Load result to register a
+    and 0xf0
+    ld c,a
     ld a,b
+    and 0xf0
+    sub c
+    jr c,head_moving_right
+    jp head_moving_left
 
-    ; If result > 16 (i.e. high bits activated) then jump
-    cp 0x10
+head_moving_vertically:
+
+    ; Restore head location
+    xor b
+
+    and 0x0f
+    ld c,a
+    ld a,b
+    and 0x0f
+    sub c
     jr c,head_moving_down
 
-    ; Otherwise, head must be moving right
-    jp head_moving_right
+; Head moving up
 
-head_moving_up:
-
+    ; Load head location to register b
     ld b,e
 
     ; Depending on the current direction, the new head location may be placed
@@ -1841,9 +1847,8 @@ tail_moving_vertically:
     and 0x0f
     sub c
     jr c,tail_moving_down
-    jp tail_moving_up
 
-tail_moving_up:
+; Tail moving up
 
     cp 0x01
     jr z,chop_off_tail
@@ -1943,11 +1948,11 @@ chop_off_tail:
     inc a
     ld (snake_history_tail_offset),a
 
-    ; Move pointer to the turn after the new tail
-    inc l
-
     ; Load new tail location to register d
     ld d,e
+
+    ; Move pointer to the turn after the new tail
+    inc l
 
     ; Load current turn location to register e
     ld e,(hl)
@@ -1982,9 +1987,8 @@ new_tail_moving_vertically:
     and 0x0f
     sub e
     jr c,new_tail_moving_down
-    jp new_tail_moving_up
 
-new_tail_moving_up:
+; New tail moving up
 
     ; Low bit of graphics
     ld e,0x68
