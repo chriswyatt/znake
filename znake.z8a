@@ -965,29 +965,29 @@ read_kempston_d:
     ; up-right (bits 0 and 3)
     ld b,0x09
     cp b
-    jp z,kempston_joy_up_right
+    jr z,kempston_joy_up_right
 
     ; down-right (bits 0 and 2)
     ld b,0x05
     cp b
-    jp z,kempston_joy_down_right
+    jr z,kempston_joy_down_right
 
     ; down-left (bits 1 and 2)
     ld b,0x06
     cp b
-    jp z,kempston_joy_down_left
+    jr z,kempston_joy_down_left
 
     ; up-left (bits 1 and 3)
     ld b,0x0a
     cp b
-    jp z,kempston_joy_up_left
+    jr z,kempston_joy_up_left
 
     ; Horizontal/vertical logic relies on last queued direction(s)
 
     ; Get last direction(s)
     ld a,e
     or a
-    jp z,direction_not_queued
+    jr z,direction_not_queued
 
     ; Otherwise, direction queued
     ld b,a
@@ -1003,13 +1003,13 @@ read_kempston_hv:
     in a,(0x1f)
 
     bit 3,a ; up
-    jp nz,kempston_joy_up
+    jr nz,kempston_joy_up
     bit 0,a ; right
-    jp nz,kempston_joy_right
+    jr nz,kempston_joy_right
     bit 2,a ; down
-    jp nz,kempston_joy_down
+    jr nz,kempston_joy_down
     bit 1,a ; left
-    jp nz,kempston_joy_left
+    jr nz,kempston_joy_left
 
     ; If no bits are on, make sure that only one direction is queued;
     ; otherwise the snake may veer off in an unintended direction
@@ -1042,11 +1042,11 @@ kempston_joy_up_right:
 
     ; If current direction is left
     bit 1,d
-    jp nz,queue_up_right
+    jr nz,queue_up_right
 
     ; If current direction is down
     bit 2,d
-    jp nz,queue_right_up
+    jr nz,queue_right_up
 
     ; Else ignore
     jp next_input_loop
@@ -1055,11 +1055,11 @@ kempston_joy_down_right:
 
     ; If current direction is left
     bit 1,d
-    jp nz,queue_down_right
+    jr nz,queue_down_right
 
     ; If current direction is up
     bit 3,d
-    jp nz,queue_right_down
+    jr nz,queue_right_down
 
     ; Else ignore
     jp next_input_loop
@@ -1068,11 +1068,11 @@ kempston_joy_down_left:
 
     ; If current direction is right
     bit 0,d
-    jp nz,queue_down_left
+    jr nz,queue_down_left
 
     ; If current direction is up
     bit 3,d
-    jp nz,queue_left_down
+    jr nz,queue_left_down
 
     ; Else ignore
     jp next_input_loop
@@ -1081,11 +1081,11 @@ kempston_joy_up_left:
 
     ; If current direction is right
     bit 0,d
-    jp nz,queue_up_left
+    jr nz,queue_up_left
 
     ; If current direction is down
     bit 2,d
-    jp nz,queue_left_up
+    jr nz,queue_left_up
 
     ; Else ignore
     jp next_input_loop
@@ -1174,7 +1174,7 @@ kempston_joy_hv:
 
     or a
     jp po,kempston_joy_hv_part_2
-    jp z,kempston_joy_hv_part_2
+    jr z,kempston_joy_hv_part_2
 
     ; Otherwise, use the higher bits, as these contain the last requested
     ; direction
@@ -1189,7 +1189,7 @@ kempston_joy_hv_part_2:
 
     ; If last direction requested is not in bitmask, ignore
     and l
-    jp z,next_input_loop
+    jr z,next_input_loop
 
     ld a,e
 
@@ -1216,6 +1216,9 @@ replace_direction_queue:
 
 next_input_loop:
 
+    ; If the current frame count is less than the previous frame count, plus
+    ; frame_wait, then continue input loop
+
     ld hl,previous_frame_count
     ld a,(23672)
     sub (hl)
@@ -1225,17 +1228,23 @@ next_input_loop:
 
     jp c,read_kempston_d
 
-    ; Else, update current direction
+    ; Otherwise, store the new frame count ...
 
     ld a,(23672)
     ld (previous_frame_count),a
 
+    ; ... and update the current direction
+
     ; If direction not queued, jump
     ld a,e
     and 0x0f
-    jp z,update_head_history
+    jr z,update_head_history
+
+    ; Otherwise, update the current direction ...
 
     ld d,a
+
+    ; ... and pop the new direction from the direction queue
 
     ld a,e
     rrca
@@ -1284,18 +1293,18 @@ update_head_history:
 
     ; If half carry
     bit 4,c
-    jp nz,head_moving_up
+    jr nz,head_moving_up
 
     ; If carry
     bit 0,c
-    jp nz,head_moving_left
+    jr nz,head_moving_left
 
     ; Load result to register a
     ld a,b
 
     ; If result > 16 (i.e. high bits activated) then jump
     cp 0x10
-    jp c,head_moving_down
+    jr c,head_moving_down
 
     ; Otherwise, head must be moving right
     jp head_moving_right
@@ -1760,7 +1769,7 @@ check_food_eaten:
 
     ; If location of head does not equal current food location, continue to
     ; update tail history routine
-    jp nz,update_tail_history
+    jr nz,update_tail_history
 
     ; Otherwise, set food eaten flag ...
     ld hl,flags
@@ -1805,25 +1814,25 @@ update_tail_history:
 
     ; If half carry
     bit 4,c
-    jp nz,tail_moving_up
+    jr nz,tail_moving_up
 
     ; If carry
     bit 0,c
-    jp nz,tail_moving_left
+    jr nz,tail_moving_left
 
     ; Load result to register a
     ld a,b
 
     ; If tail moved down one
     cp 0x01
-    jp z,chop_off_tail
+    jr z,chop_off_tail
 
     ; If tail moved right one
     cp 0x10
-    jp z,chop_off_tail
+    jr z,chop_off_tail
 
     ; If result > 16 (i.e. high bits activated) then jump
-    jp c,tail_moving_down
+    jr c,tail_moving_down
 
     ; Otherwise, tail must be moving right
     jp tail_moving_right
@@ -1834,7 +1843,7 @@ tail_moving_up:
     ; turn become the new tail. It's gruesome, but it works.
     ld a,b
     cp 0xff
-    jp z,chop_off_tail
+    jr z,chop_off_tail
 
     ; Shift location up
     dec d
@@ -1880,7 +1889,7 @@ tail_moving_left:
     ; turn become the new tail. It's gruesome, but it works.
     ld a,b
     cp 0xf0
-    jp z,chop_off_tail
+    jr z,chop_off_tail
 
     ; Get tail location again and shift it left
     ld a,d
@@ -1944,18 +1953,18 @@ chop_off_tail:
 
     ; If half carry
     bit 4,a
-    jp nz,new_tail_moving_up
+    jr nz,new_tail_moving_up
 
     ; If carry
     bit 0,a
-    jp nz,new_tail_moving_left
+    jr nz,new_tail_moving_left
 
     ; Load result to register a
     ld a,b
 
     ; If result > 16 (i.e. high bits activated) then jump
     cp 0x10
-    jp c,new_tail_moving_down
+    jr c,new_tail_moving_down
 
     ; Otherwise, tail must be moving right
     jp new_tail_moving_right
