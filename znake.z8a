@@ -1346,12 +1346,6 @@ head_moving_vertically:
     ; Get head location again and shift it up
     dec b
 
-    ; Collision with border
-    ld a,b
-    xor e
-    and 0xf0
-    jp nz,restart
-
     ; Low bit of graphics
     ld c,0x08
 
@@ -1388,9 +1382,6 @@ head_moving_right:
     ; Get head location again and shift it right
     ld a,b
     add a,0x10
-
-    ; Collision with border
-    jp c,restart
 
     ; Update the existing head location in our table
     ld (hl),a
@@ -1431,12 +1422,6 @@ head_moving_down:
     ; Get head location again and shift it down
     inc b
 
-    ; Collision with border
-    ld a,b
-    xor e
-    and 0xf0
-    jp nz,restart
-
     ; Low bit of graphics
     ld c,0x18
 
@@ -1474,9 +1459,6 @@ head_moving_left:
     ld a,b
     sub 0x10
 
-    ; Collision with border
-    jp c,restart
-
     ; Update the existing head location in our table
     ld (hl),a
 
@@ -1502,9 +1484,6 @@ head_turning_up_right:
     ; Get head location again and shift it right
     ld a,b
     add a,0x10
-
-    ; Collision with border
-    jp c,restart
 
     ; Push new head location back to b register
     ld b,a
@@ -1538,12 +1517,6 @@ head_turning_right_up:
     ; Get head location again and shift it up
     dec b
 
-    ; Collision with border
-    ld a,b
-    xor e
-    and 0xf0
-    jp nz,restart
-
     ; Low bit of graphics
     ld c,0x08
 
@@ -1572,12 +1545,6 @@ head_turning_right_down:
 
     ; Get head location again and shift it down
     inc b
-
-    ; Collision with border
-    ld a,b
-    xor e
-    and 0xf0
-    jp nz,restart
 
     ; Low bit of graphics
     ld c,0x18
@@ -1609,9 +1576,6 @@ head_turning_down_right:
     ; Get head location again and shift it right
     ld a,b
     add a,0x10
-
-    ; Collision with border
-    jp c,restart
 
     ; Push new head location back to b register
     ld b,a
@@ -1646,9 +1610,6 @@ head_turning_down_left:
     ld a,b
     sub 0x10
 
-    ; Collision with border
-    jp c,restart
-
     ; Push new head location back to b register
     ld b,a
 
@@ -1681,12 +1642,6 @@ head_turning_left_down:
     ; Get head location again and shift it down
     inc b
 
-    ; Collision with border
-    ld a,b
-    xor e
-    and 0xf0
-    jp nz,restart
-
     ; Low bit of graphics
     ld c,0x18
 
@@ -1715,12 +1670,6 @@ head_turning_left_up:
 
     ; Get head location again and shift it up
     dec b
-
-    ; Collision with border
-    ld a,b
-    xor e
-    and 0xf0
-    jp nz,restart
 
     ; Low bit of graphics
     ld c,0x08
@@ -1752,9 +1701,6 @@ head_turning_up_left:
     ; Get head location again and shift it left
     ld a,b
     sub 0x10
-
-    ; Collision with border
-    jp c,restart
 
     ; Push new head location back to b register
     ld b,a
@@ -2057,31 +2003,42 @@ collision_detection:
     bit 2,e
     jr nz,head_below_neck
 
-head_above_neck:
+; Head above neck
 
     inc a
 
-    jp collision_detection_first_section
+    jp check_border_collision_vertical
 
 head_below_neck:
 
     dec a
 
-    jp collision_detection_first_section
+    jp check_border_collision_vertical
 
 head_left_of_neck:
 
     add a,0x10
 
-    jp collision_detection_first_section
+    jp check_border_collision_horizontal
 
 head_right_of_neck:
 
     sub 0x10
 
-collision_detection_first_section:
+check_border_collision_horizontal:
 
     ld d,a
+
+    jp c,restart
+    jp collision_detection_next_snake_section
+
+check_border_collision_vertical:
+
+    ld d,a
+
+    xor c
+    and 0xf0
+    jp nz,restart
 
 collision_detection_next_snake_section:
 
