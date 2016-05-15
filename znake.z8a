@@ -1823,10 +1823,10 @@ update_tail_history:
     xor d
 
     and 0xf0
-    ld b,a
+    ld c,a
     ld a,d
     and 0xf0
-    sub b
+    sub c
     jr c,tail_moving_right
     jp tail_moving_left
 
@@ -1836,10 +1836,10 @@ tail_moving_vertically:
     xor d
 
     and 0x0f
-    ld b,a
+    ld c,a
     ld a,d
     and 0x0f
-    sub b
+    sub c
     jr c,tail_moving_down
     jp tail_moving_up
 
