@@ -357,11 +357,9 @@ draw_char:
 
     ; This calculates the row number grouped by display section, i.e.:
     ; row 0 = 0x00, row 1 = 0x20, row 7 = 0xE0, row 8 = 0x00, etc.
-    rlca
-    rlca
-    rlca
-    rlca
-    rlca
+    rrca
+    rrca
+    rrca
     and 0xf0
 
     ; The first line of each column is offset by a byte
@@ -485,12 +483,11 @@ check_no_overlap:
     jr c,no_overlap
 
     ; Isolate Y nibble
-    and 0x0f
-    ld l,a
     ld a,d
     and 0x0f
     ld h,a
     ld a,l
+    and 0x0f
     sub h
 
     ; If carry, A1y > B2y
@@ -1795,7 +1792,7 @@ check_food_eaten:
 update_tail_history:
 
     ; Move pointer to start of snake history
-    ld hl,snake_history
+    ld h,(snake_history >> 8) & $FF
     ld a,(snake_history_tail_offset)
     ld l,a
 
@@ -1814,45 +1811,41 @@ update_tail_history:
     ; Load current turn location to register e
     ld e,(hl)
 
-    ; Subtract tail location from turn location
     ld a,e
-    sub d
 
-    ; Load result and flags to bc
-    push af
-    pop bc
+    xor d
+    cp 16
+    jr c,tail_moving_vertically
 
-    ; If half carry
-    bit 4,c
-    jr nz,tail_moving_up
+    ; Tail moving horizontally
 
-    ; If carry
-    bit 0,c
-    jr nz,tail_moving_left
+    ; Restore current turn location
+    xor d
 
-    ; Load result to register a
-    ld a,b
+    and 0xf0
+    ld b,a
+    ld a,d
+    and 0xf0
+    sub b
+    jr c,tail_moving_right
+    jp tail_moving_left
 
-    ; If tail moved down one
-    cp 0x01
-    jr z,chop_off_tail
+tail_moving_vertically:
 
-    ; If tail moved right one
-    cp 0x10
-    jr z,chop_off_tail
+    ; Restore current turn location
+    xor d
 
-    ; If result > 16 (i.e. high bits activated) then jump
+    and 0x0f
+    ld b,a
+    ld a,d
+    and 0x0f
+    sub b
     jr c,tail_moving_down
-
-    ; Otherwise, tail must be moving right
-    jp tail_moving_right
+    jp tail_moving_up
 
 tail_moving_up:
 
-    ; If the distance from turn to tail is -1, chop off the tail and let the
-    ; turn become the new tail. It's gruesome, but it works.
-    ld a,b
-    cp 0xff
+    cp 0x01
     jr z,chop_off_tail
 
     ; Shift location up
@@ -1873,6 +1866,9 @@ tail_moving_up:
     jp collision_detection
 
 tail_moving_right:
+
+    cp 0xf0
+    jr z,chop_off_tail
 
     ; Get tail location again and shift it right
     ld a,d
@@ -1895,10 +1891,7 @@ tail_moving_right:
 
 tail_moving_left:
 
-    ; If the distance from turn to tail is -1, chop off the tail and let the
-    ; turn become the new tail. It's gruesome, but it works.
-    ld a,b
-    cp 0xf0
+    cp 0x10
     jr z,chop_off_tail
 
     ; Get tail location again and shift it left
@@ -1921,6 +1914,9 @@ tail_moving_left:
     jp collision_detection
 
 tail_moving_down:
+
+    cp 0xff
+    jr z,chop_off_tail
 
     ; Shift location down
     inc d
@@ -1950,38 +1946,45 @@ chop_off_tail:
     ; Move pointer to the turn after the new tail
     inc l
 
-    ; Subtract tail location from turn location
-    ld a,(hl)
+    ; Load new tail location to register d
+    ld d,e
+
+    ; Load current turn location to register e
+    ld e,(hl)
+
+    ld a,e
+
+    xor d
+    cp 16
+    jr c,new_tail_moving_vertically
+
+    ; New tail moving horizontally
+
+    ; Restore current turn location
+    xor d
+
+    and 0xf0
+    ld e,a
+    ld a,d
+    and 0xf0
     sub e
+    jr c,new_tail_moving_right
+    jp new_tail_moving_left
 
-    ; Load result and flags to bc
-    push af
-    pop bc
+new_tail_moving_vertically:
 
-    ; Load flags to register a
-    ld a,c
+    ; Restore current turn location
+    xor d
 
-    ; If half carry
-    bit 4,a
-    jr nz,new_tail_moving_up
-
-    ; If carry
-    bit 0,a
-    jr nz,new_tail_moving_left
-
-    ; Load result to register a
-    ld a,b
-
-    ; If result > 16 (i.e. high bits activated) then jump
-    cp 0x10
+    and 0x0f
+    ld e,a
+    ld a,d
+    and 0x0f
+    sub e
     jr c,new_tail_moving_down
-
-    ; Otherwise, tail must be moving right
-    jp new_tail_moving_right
+    jp new_tail_moving_up
 
 new_tail_moving_up:
-
-    ld d,e
 
     ; Low bit of graphics
     ld e,0x68
@@ -1993,8 +1996,6 @@ new_tail_moving_up:
 
 new_tail_moving_right:
 
-    ld d,e
-
     ; Low bit of graphics
     ld e,0x70
 
@@ -2005,8 +2006,6 @@ new_tail_moving_right:
 
 new_tail_moving_down:
 
-    ld d,e
-
     ; Low bit of graphics
     ld e,0x58
 
@@ -2016,8 +2015,6 @@ new_tail_moving_down:
     jp collision_detection
 
 new_tail_moving_left:
-
-    ld d,e
 
     ; Low bit of graphics
     ld e,0x60
