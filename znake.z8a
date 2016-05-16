@@ -411,8 +411,6 @@ check_quadrant:
     add a,b
     ld e,a
 
-    ld h,(snake_history >> 8) & $FF
-
     ld a,(snake_history_tail_offset)
     ld l,a
 
@@ -422,6 +420,8 @@ check_quadrant:
     ld b,a
 
 next_snake_section:
+
+    ld h,(snake_history >> 8) & $FF
 
     ; Load first turn or tail location to register c
     ld a,(hl)
@@ -510,8 +510,6 @@ overlap:
     jp next_quadrant
 
 no_overlap:
-
-    ld h,(snake_history >> 8) & $FF
 
     ; Check if the next section of snake overlaps this quadrant
     djnz next_snake_section
