@@ -474,8 +474,8 @@ check_no_overlap:
     sub d
 
     ; If carry, A1x > B2x or A1y > B2y
-    ; (A1y > B2y only detected in certain edge cases, which is why we
-    ;  isolate the Y nibble in the next check)
+    ; (A1y > B2y only detected in certain edge cases, which is why we check
+    ;  if the Y nibble carries in the next check)
     jr c,no_overlap
 
     ; Check half carry
