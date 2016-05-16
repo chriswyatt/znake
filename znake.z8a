@@ -549,32 +549,17 @@ next_quadrant:
     pop de
 
     ld a,e
-
-    ; If top-left or bottom-right quadrant, jump
     or a
-    jp pe,top_left_or_bottom_right
 
-    ; Otherwise, top-right or bottom-left quadrant
+    ; If top-left, return
+    ret z
 
-    ; If top-right, jump
-    and 0x0f
-    jr z,top_right
+    jp pe,bottom_right
 
-    ; Otherwise, bottom-left
+    cp 0x09
+    jr c,bottom_left
 
-    rlca
-    rlca
-    rlca
-    rlca
-    or e
-    ld e,a
-
-    sub 0x11
-    ld b,a
-
-    jp check_quadrant
-
-top_right:
+    ; Top-right
 
     ld a,e
     rrca
@@ -589,12 +574,21 @@ top_right:
 
     jp check_quadrant
 
-top_left_or_bottom_right:
+bottom_left:
 
-    ; If top-left, return
-    ret z
+    rlca
+    rlca
+    rlca
+    rlca
+    or e
+    ld e,a
 
-    ; Otherwise, bottom-right
+    sub 0x11
+    ld b,a
+
+    jp check_quadrant
+
+bottom_right:
 
     sub 0x11
     ld b,a
