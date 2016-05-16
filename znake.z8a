@@ -423,29 +423,28 @@ check_quadrant:
 
 next_snake_section:
 
-    ; Load first turn or tail location to register a
+    ; Load first turn or tail location to register c
     ld a,(hl)
 
     inc l
-    ld c,l
 
-    ; Load second turn or head location to register l
-    ld l,(hl)
+    ; Load second turn or head location to register h
+    ld h,(hl)
 
     ; We need to take the lower location from the higher location; thus, we
-    ; need to sort them first. We will use registers h and l, as these have
+    ; need to sort them first. We will use registers c and h, as these have
     ; become free
 
-    ld h,a
+    ld c,a
 
-    ; If l > h, the snake is going right or down
-    cp l
+    ; If h > a, the snake is going right or down
+    cp h
     jr c,check_no_overlap
 
     ; Otherwise, the snake is going left or up
 
-    ld h,l
-    ld l,a
+    ld c,h
+    ld h,a
 
 check_no_overlap:
 
@@ -453,7 +452,7 @@ check_no_overlap:
     ld a,e
 
     ; Minus tail/turn 1 (B1)
-    sub h
+    sub c
 
     ; If carry, B1x > A2x or B1y > A2y
     ; (B1y > A2y only detected in certain edge cases, which is why we check
@@ -462,13 +461,13 @@ check_no_overlap:
 
     ; Check half carry
     and 0xf0
-    add a,h
+    add a,c
     xor e
     and 0xf0
     jr nz,no_overlap
 
     ; Tail/turn 2 (B2)
-    ld a,l
+    ld a,h
 
     ; Minus top-left of square (A1)
     sub d
@@ -481,7 +480,7 @@ check_no_overlap:
     ; Check half carry
     and 0xf0
     add a,d
-    xor l
+    xor h
     and 0xf0
     jr nz,no_overlap
 
@@ -513,7 +512,6 @@ overlap:
 no_overlap:
 
     ld h,(snake_history >> 8) & $FF
-    ld l,c
 
     ; Check if the next section of snake overlaps this quadrant
     djnz next_snake_section
