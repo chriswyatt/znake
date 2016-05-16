@@ -926,6 +926,7 @@ create_food:
     add a,4
     ld e,a
 
+    halt
     call draw_char
 
     ; Reset food eaten flag
@@ -2103,6 +2104,9 @@ update_graphics_init:
 
     ld hl,flags
     bit 0,(hl)
+
+    halt
+
     jr z,draw_tail
 
     ; Otherwise, loop 2 times to update grid locations: new head, existing head
