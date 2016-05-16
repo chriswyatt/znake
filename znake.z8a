@@ -453,45 +453,37 @@ check_no_overlap:
     ld a,e
 
     ; Minus tail/turn 1 (B1)
-    cp h
-
-    ; If carry, B1x > A2x or B1y > A2y
-    ; (B1y > A2y only detected in certain edge cases, which is why we
-    ;  isolate the Y nibble in the next check)
-    jr c,no_overlap
-
-    ; Isolate Y nibble
-    ld a,h
-    and 0x0f
-    ld h,a
-    ld a,e
-    and 0x0f
     sub h
 
-    ; If carry, B1y < A2y
+    ; If carry, B1x > A2x or B1y > A2y
+    ; (B1y > A2y only detected in certain edge cases, which is why we check
+    ;  if the Y nibble carries in the next check)
     jr c,no_overlap
+
+    ; Check half carry
+    and 0xf0
+    add a,h
+    xor e
+    and 0xf0
+    jr nz,no_overlap
 
     ; Tail/turn 2 (B2)
     ld a,l
 
     ; Minus top-left of square (A1)
-    cp d
+    sub d
 
     ; If carry, A1x > B2x or A1y > B2y
     ; (A1y > B2y only detected in certain edge cases, which is why we
     ;  isolate the Y nibble in the next check)
     jr c,no_overlap
 
-    ; Isolate Y nibble
-    ld a,d
-    and 0x0f
-    ld h,a
-    ld a,l
-    and 0x0f
-    sub h
-
-    ; If carry, A1y > B2y
-    jr c,no_overlap
+    ; Check half carry
+    and 0xf0
+    add a,d
+    xor l
+    and 0xf0
+    jr nz,no_overlap
 
 overlap:
 
