@@ -419,34 +419,52 @@ check_quadrant:
     sub l
     ld b,a
 
-next_snake_section:
+next_snake_section
 
     ld h,(snake_history >> 8) & $FF
 
     ; Load first turn or tail location to register c
-    ld a,(hl)
+    ld c,(hl)
 
     inc l
 
-    ; Load second turn or head location to register h
-    ld h,(hl)
+    ; Load second turn or head location to register a
+    ld a,(hl)
 
     ; We need to take the lower location from the higher location; thus, we
     ; need to sort them first. We will use registers c and h, as these have
-    ; become free
+    ; become free. NB: Register a is used instead of h, initially.
 
-    ld c,a
-
-    ; If h > a, the snake is going right or down
-    cp h
-    jr c,check_no_overlap
+    ; If a > c, the snake is going right or down
+    cp c
+    jr nc,check_no_overlap
 
     ; Otherwise, the snake is going left or up
 
-    ld c,h
+    ; Swap registers a and c, using h as a mediary
     ld h,a
+    ld a,c
+    ld c,h
 
 check_no_overlap:
+
+    ; Load tail/turn 2 (B2) to register h
+    ld h,a
+
+    ; Minus top-left of square (A1)
+    sub d
+
+    ; If carry, A1x > B2x or A1y > B2y
+    ; (A1y > B2y only detected in certain edge cases, which is why we check
+    ;  if the Y nibble carries in the next check)
+    jr c,no_overlap
+
+    ; Check half carry
+    and 0x11
+    add a,d
+    xor h
+    and 0x11
+    jr nz,no_overlap
 
     ; Bottom-right of square (A2)
     ld a,e
@@ -460,28 +478,10 @@ check_no_overlap:
     jr c,no_overlap
 
     ; Check half carry
-    and 0xf0
+    and 0x11
     add a,c
     xor e
-    and 0xf0
-    jr nz,no_overlap
-
-    ; Tail/turn 2 (B2)
-    ld a,h
-
-    ; Minus top-left of square (A1)
-    sub d
-
-    ; If carry, A1x > B2x or A1y > B2y
-    ; (A1y > B2y only detected in certain edge cases, which is why we check
-    ;  if the Y nibble carries in the next check)
-    jr c,no_overlap
-
-    ; Check half carry
-    and 0xf0
-    add a,d
-    xor h
-    and 0xf0
+    and 0x11
     jr nz,no_overlap
 
 overlap:
@@ -493,10 +493,11 @@ overlap:
 
     ; Load the offset to the bottom-right of the top-left quadrant to register
     ; b
-    add a,0x11
+    ld b,0x11
+    add a,b
     rrca
     ld e,a
-    sub 0x11
+    sub b
     ld b,a
 
     ; Load the offset to the bottom-left quadrant to register e
