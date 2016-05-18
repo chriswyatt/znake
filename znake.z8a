@@ -279,6 +279,8 @@ snake_length: db 0
 ; Stack pointer backup
 sp_bak: defw 0x0000
 
+tmp: db 0x00
+
 random:
 
 ; Simple pseudo-random number generator.
@@ -388,13 +390,15 @@ draw_line:
 
 check_quadrants:
 
+    ld c,0x11
+
     ld a,e
     rlca
     rlca
     rlca
     rlca
     or e
-    sub 0x11
+    sub c
     ld b,a
 
 check_quadrant:
@@ -411,45 +415,52 @@ check_quadrant:
     add a,b
     ld e,a
 
+    ld c,0xf0
+
     ld a,(snake_history_tail_offset)
     ld l,a
+
+    ; Load tail offset to temporary storage. Increment in advance, for the
+    ; initial loop.
+    inc a
+    ld (tmp),a
 
     ; Initialise counter
     ld a,(snake_history_head_offset)
     sub l
     ld b,a
 
-next_snake_section
-
     ld h,(snake_history >> 8) & $FF
 
-    ; Load first turn or tail location to register c
-    ld c,(hl)
+    ; Load first turn or tail location to register a
+    ld a,(hl)
 
     inc l
 
-    ; Load second turn or head location to register a
-    ld a,(hl)
+next_snake_section:
+
+    ; Load second turn or head location to register h
+    ld h,(hl)
+
+    ; Load first turn or tail location to register l
+    ld l,a
 
     ; We need to take the lower location from the higher location; thus, we
-    ; need to sort them first. We will use registers c and h, as these have
-    ; become free. NB: Register a is used instead of h, initially.
+    ; need to sort them first. We will use registers l and h, as these have
+    ; become free.
 
-    ; If a > c, the snake is going right or down
-    cp c
-    jr nc,check_no_overlap
+    ; If h > l, the snake is going right or down
+    cp h
+    jr c,check_no_overlap_pos
 
     ; Otherwise, the snake is going left or up
 
-    ; Swap registers a and c, using h as a mediary
-    ld h,a
-    ld a,c
-    ld c,h
+    ; TODO: Turn pos and neg routines into a single macro
 
-check_no_overlap:
+; Check no overlap (neg)
 
-    ; Load tail/turn 2 (B2) to register h
-    ld h,a
+    ; Tail/turn 2 (B2)
+    ld a,l
 
     ; Minus top-left of square (A1)
     sub d
@@ -460,17 +471,17 @@ check_no_overlap:
     jr c,no_overlap
 
     ; Check half carry
-    and 0x11
+    and c ; 0xf0
     add a,d
-    xor h
-    and 0x11
+    xor l
+    and c ; 0xf0
     jr nz,no_overlap
 
     ; Bottom-right of square (A2)
     ld a,e
 
     ; Minus tail/turn 1 (B1)
-    sub c
+    sub h
 
     ; If carry, B1x > A2x or B1y > A2y
     ; (B1y > A2y only detected in certain edge cases, which is why we check
@@ -478,13 +489,55 @@ check_no_overlap:
     jr c,no_overlap
 
     ; Check half carry
-    and 0x11
-    add a,c
+    and c ; 0xf0
+    add a,h
     xor e
-    and 0x11
+    and c ; 0xf0
+    jr nz,no_overlap
+
+    jp overlap
+
+check_no_overlap_pos:
+
+    ; Tail/turn 2 (B2)
+    ld a,h
+
+    ; Minus top-left of square (A1)
+    sub d
+
+    ; If carry, A1x > B2x or A1y > B2y
+    ; (A1y > B2y only detected in certain edge cases, which is why we check
+    ;  if the Y nibble carries in the next check)
+    jr c,no_overlap
+
+    ; Check half carry
+    and c ; 0xf0
+    add a,d
+    xor h
+    and c ; 0xf0
+    jr nz,no_overlap
+
+    ; Bottom-right of square (A2)
+    ld a,e
+
+    ; Minus tail/turn 1 (B1)
+    sub l
+
+    ; If carry, B1x > A2x or B1y > A2y
+    ; (B1y > A2y only detected in certain edge cases, which is why we check
+    ;  if the Y nibble carries in the next check)
+    jr c,no_overlap
+
+    ; Check half carry
+    and c ; 0xf0
+    add a,l
+    xor e
+    and c ; 0xf0
     jr nz,no_overlap
 
 overlap:
+
+    ld c,0x11
 
     ; Cannot divide square (i.e. 1 pixel)
     ld a,e
@@ -493,11 +546,10 @@ overlap:
 
     ; Load the offset to the bottom-right of the top-left quadrant to register
     ; b
-    ld b,0x11
-    add a,b
+    add a,c ; 0x11
     rrca
     ld e,a
-    sub b
+    sub c ; 0x11
     ld b,a
 
     ; Load the offset to the bottom-left quadrant to register e
@@ -512,8 +564,19 @@ overlap:
 
 no_overlap:
 
+    ld a,(tmp)
+    inc a
+    ld (tmp),a
+    ld l,a
+
+    ld a,h
+
+    ld h,(snake_history >> 8) & $FF
+
     ; Check if the next section of snake overlaps this quadrant
     djnz next_snake_section
+
+    ld c,0x11
 
     ; Otherwise, add this quadrant to the free squares tables
 
@@ -556,7 +619,7 @@ next_quadrant:
     rrca
     rrca
     or e
-    sub 0x11
+    sub c ; 0x11
     ld b,a
 
     ld e,0x00
@@ -572,14 +635,14 @@ bottom_left:
     or e
     ld e,a
 
-    sub 0x11
+    sub c ; 0x11
     ld b,a
 
     jp check_quadrant
 
 bottom_right:
 
-    sub 0x11
+    sub c ; 0x11
     ld b,a
 
     ld a,e
@@ -589,8 +652,9 @@ bottom_right:
     jp check_quadrant
 
 start:
+
     di
-    
+
     ld (sp_bak),sp
 
     ld hl,0x9100
