@@ -279,8 +279,6 @@ snake_length: db 0
 ; Stack pointer backup
 sp_bak: defw 0x0000
 
-tmp: db 0x00
-
 random:
 
 ; Simple pseudo-random number generator.
@@ -420,10 +418,6 @@ check_quadrant:
     ld a,(snake_history_tail_offset)
     ld l,a
 
-    ; Load tail offset to temporary storage. Increment in advance.
-    inc a
-    ld (tmp),a
-
     ; Initialise counter
     ld a,(snake_history_head_offset)
     sub l
@@ -435,6 +429,8 @@ check_quadrant:
     ld a,(hl)
 
     inc l
+
+    push hl
 
 next_snake_section:
 
@@ -536,6 +532,8 @@ check_no_overlap_pos:
 
 overlap:
 
+    pop hl
+
     ld c,0x11
 
     ; Cannot divide square (i.e. 1 pixel)
@@ -563,17 +561,16 @@ overlap:
 
 no_overlap:
 
-    ld a,(tmp)
-    inc a
-    ld (tmp),a
-    ld l,a
-
     ld a,h
 
-    ld h,(snake_history >> 8) & $FF
+    pop hl
+    inc l
+    push hl
 
     ; Check if the next section of snake overlaps this quadrant
     djnz next_snake_section
+
+    pop hl
 
     ld c,0x11
 
