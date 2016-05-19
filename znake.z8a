@@ -271,8 +271,6 @@ flags: db 0x00
 
 previous_frame_count: db 0x00
 
-frame_wait: db 0
-
 ; Calculating this from snake_history would be too expensive
 snake_length: db 0
 
@@ -830,10 +828,6 @@ draw_left_border_next:
     ld hl,flags
     set 0,(hl)
 
-    ; Snake speed (lower = faster)
-    ld a,10
-    ld (frame_wait),a
-
     ; Needed for snake wait overrun check
     ld a,(23672)
     ld (previous_frame_count),a
@@ -983,24 +977,6 @@ create_food:
     ; Reset food eaten flag
     ld hl,flags
     res 0,(hl)
-
-    ld hl,previous_frame_count
-    ld a,(23672)
-    sub (hl)
-
-    ld hl,frame_wait
-    sub (hl)
-
-    jr c,initiate_input_loop
-
-    ; Otherwise, food placement routine has taken too long, and we should have
-    ; moved the snake already. We will slow the snake down to reduce the chance
-    ; of this happening again.
-
-    ; Add 1 frame to the existing frame wait
-    ld a,(hl)
-    add a,1
-    ld (hl),a
 
 initiate_input_loop:
 
@@ -1276,8 +1252,8 @@ next_input_loop:
     ld a,(23672)
     sub (hl)
 
-    ld hl,frame_wait
-    sub (hl)
+    ; Snake speed (higher = slower)
+    sub 10
 
     jp c,read_kempston_d
 
