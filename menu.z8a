@@ -72,6 +72,19 @@ str_medium: db "Medium\0"
 
 str_hard: db "Hard\0"
 
+difficulty: db 0x01
+
+difficulties:
+
+    dw str_easy
+    dw 0x0d09
+
+    dw str_medium
+    dw 0x0c0b
+
+    dw str_hard
+    dw 0x0d0d
+
 print_next:
 
     inc hl
@@ -111,23 +124,9 @@ multiply:
     pop hl
     jp print_next
 
-start:
-
-    ld hl,str_easy
-    ld de,0x0908
-    call print
-
-    ld hl,str_medium
-    ld de,0x080a
-    call print
-
-    ld hl,str_hard
-    ld de,0x090c
-    call print
+select:
 
     ld b,6
-    ld hl,0x8000
-    ld de,0x080c
 
 select_next:
 
@@ -140,5 +139,96 @@ select_next:
     pop hl
     inc d
     djnz select_next
+    ret
+
+start:
+
+    ; Set border color to black
+    xor a ; a = 0
+    call $229B
+
+    ld hl,str_easy
+    ld de,0x0d09
+    call print
+
+    ld hl,str_medium
+    ld de,0x0c0b
+    call print
+
+    ld hl,str_hard
+    ld de,0x0d0d
+    call print
+
+    ld hl,0x8000
+    ld de,0x0c0b
+
+    call select
+
+input_loop:
+
+    in a,(0x1f)
+
+    ld hl,difficulty
+
+    bit 3,a
+    jr nz,kempston_joy_up
+
+    bit 2,a
+    jr nz,kempston_joy_down
+
+    jp input_loop
+
+kempston_joy_up:
+
+    ld a,(hl)
+    inc a
+    cp 0x03
+    jr nz,difficulty_higher
+
+    xor a
+
+difficulty_higher:
+
+    ld d,a
+
+    jp unselect_current_difficulty
+
+kempston_joy_down:
+
+    ld a,(hl)
+    dec a
+    cp 0xff
+    jr nz,difficulty_lower
+
+    ld a,2
+
+difficulty_lower:
+
+    ld d,a
+
+unselect_current_difficulty:
+
+    ld b,(hl)
+
+    ld hl,difficulties
+    ld de,4
+
+move_pointer:
+
+    add hl,de
+    djnz move_pointer
+
+    inc hl
+    inc hl
+
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+
+    ld hl,0x8000
+
+    call select
+
+    ret
 
 end start
