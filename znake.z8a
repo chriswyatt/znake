@@ -32,6 +32,11 @@
 
 TBL_SNAKE_HISTORY: EQU 0xff00
 
+; Note: The food routine relies on the following tables being consecutive and
+;       in a specific order:
+
+TBL_SNAKE_HISTORY_CLEAN: EQU 0xfc00
+
 ; The following tables hold the top-left and bottom-right coordinates of each
 ; free square: i.e., each square that does not contain any snake. This is
 ; required to be able to pick the location of new food
@@ -43,8 +48,6 @@ TBL_SNAKE_HISTORY: EQU 0xff00
 
 ; The high bytes contain the X coordinates, and the low bytes contain the Y
 ; coordinates
-
-TBL_SNAKE_HISTORY_CLEAN: EQU 0xfc00
 
 TBL_FREE_SQUARES_TL_TABLE: EQU 0xfd00
 
