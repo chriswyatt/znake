@@ -1,0 +1,144 @@
+org 0x8000
+
+graphics:
+
+db 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+
+draw_char:
+
+; Takes column/row (bc) and pointer (hl) and draws a character to the display
+; buffer
+
+    ; Get the memory location of the first line of a character
+
+    ; Calculate high byte of display location
+
+    ; The high byte represents the display section and line number (which is
+    ; added later on)
+
+    ld a,e
+
+    ; Discard all but bits 3 and 4. Taken in isolation, these are the offsets
+    ; for the display section, specifically 0x00, 0x08 and 0x10
+    and 0x18 ;
+
+    ; The high byte for the first line of each character is either 0x40, 0x48
+    ; or 0x50, depending on which section it recides in
+    add a,0x40
+
+    ld b,a
+
+    ; Calculate low byte of display location
+
+    ; The low byte represents row and column numbers
+
+    ld a,e
+
+    ; This calculates the row number grouped by display section, i.e.:
+    ; row 0 = 0x00, row 1 = 0x20, row 7 = 0xE0, row 8 = 0x00, etc.
+    rrca
+    rrca
+    rrca
+    and 0xf0
+
+    ; The first line of each column is offset by a byte
+    add a,d
+
+    ld d,b
+    ld e,a
+
+    ; A character has 8 lines
+    ld b,8
+
+draw_line:
+
+; Draw a character line by line
+
+    ld a,(de)
+    xor (hl)
+    ld (de),a
+    inc l
+
+    ; The high byte is incremented to get the destination of the next line
+    inc d
+
+    djnz draw_line
+
+    ret
+
+str_easy: db "Easy\0"
+
+str_medium: db "Medium\0"
+
+str_hard: db "Hard\0"
+
+print_next:
+
+    inc hl
+    inc d
+
+print:
+
+    ld a,(hl)
+    or a
+    cp 0
+    ret z
+
+    push hl
+    push de
+
+print_char:
+
+    ld b,3
+
+    ld h,0
+    ld l,a
+
+multiply:
+
+    add hl,hl
+    djnz multiply
+
+    ld d,h
+    ld e,l
+
+    ld hl,0x3d00 - (8 * 0x20)
+    add hl,de
+    pop de
+    push de
+    call draw_char
+    pop de
+    pop hl
+    jp print_next
+
+start:
+
+    ld hl,str_easy
+    ld de,0x0908
+    call print
+
+    ld hl,str_medium
+    ld de,0x080a
+    call print
+
+    ld hl,str_hard
+    ld de,0x090c
+    call print
+
+    ld b,6
+    ld hl,0x8000
+    ld de,0x080c
+
+select_next:
+
+    push hl
+    push de
+    push bc
+    call draw_char
+    pop bc
+    pop de
+    pop hl
+    inc d
+    djnz select_next
+
+end start
