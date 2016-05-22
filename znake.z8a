@@ -306,8 +306,6 @@ check_quadrant:
     add a,b
     ld e,a
 
-    ld c,0xf0
-
     ld a,(snake_history_tail_offset)
     ld l,a
 
@@ -319,26 +317,21 @@ check_quadrant:
     ld h,(TBL_SNAKE_HISTORY >> 8) & $FF
 
     ; Load first turn or tail location to register a
-    ld a,(hl)
+    ld c,(hl)
 
     inc l
-
-    push hl
 
 next_snake_section:
 
     ; Load second turn or head location to register h
-    ld h,(hl)
-
-    ; Load first turn or tail location to register l
-    ld l,a
+    ld a,(hl)
 
     ; We need to take the lower location from the higher location; thus, we
     ; need to sort them first. We will use registers l and h, as these have
     ; become free.
 
     ; If h > l, the snake is going right or down
-    cp h
+    cp c
     jr c,check_no_overlap_pos
 
     ; Otherwise, the snake is going left or up
@@ -347,8 +340,7 @@ next_snake_section:
 
 ; Check no overlap (neg)
 
-    ; Tail/turn 2 (B2)
-    ld a,l
+    ; Tail/turn 2 (B2) already in register a
 
     ; Minus top-left of square (A1)
     sub d
@@ -359,17 +351,17 @@ next_snake_section:
     jr c,no_overlap
 
     ; Check half carry
-    and c ; 0xf0
+    and 0xf0
     add a,d
-    xor l
-    and c ; 0xf0
+    xor (hl)
+    and 0xf0
     jr nz,no_overlap
 
     ; Bottom-right of square (A2)
     ld a,e
 
     ; Minus tail/turn 1 (B1)
-    sub h
+    sub c
 
     ; If carry, B1x > A2x or B1y > A2y
     ; (B1y > A2y only detected in certain edge cases, which is why we check
@@ -377,10 +369,10 @@ next_snake_section:
     jr c,no_overlap
 
     ; Check half carry
-    and c ; 0xf0
-    add a,h
+    and 0xf0
+    add a,c
     xor e
-    and c ; 0xf0
+    and 0xf0
     jr nz,no_overlap
 
     jp overlap
@@ -388,7 +380,7 @@ next_snake_section:
 check_no_overlap_pos:
 
     ; Tail/turn 2 (B2)
-    ld a,h
+    ld a,c
 
     ; Minus top-left of square (A1)
     sub d
@@ -399,17 +391,17 @@ check_no_overlap_pos:
     jr c,no_overlap
 
     ; Check half carry
-    and c ; 0xf0
+    and 0xf0
     add a,d
-    xor h
-    and c ; 0xf0
+    xor c
+    and 0xf0
     jr nz,no_overlap
 
     ; Bottom-right of square (A2)
     ld a,e
 
     ; Minus tail/turn 1 (B1)
-    sub l
+    sub (hl)
 
     ; If carry, B1x > A2x or B1y > A2y
     ; (B1y > A2y only detected in certain edge cases, which is why we check
@@ -417,15 +409,13 @@ check_no_overlap_pos:
     jr c,no_overlap
 
     ; Check half carry
-    and c ; 0xf0
-    add a,l
+    and 0xf0
+    add a,(hl)
     xor e
-    and c ; 0xf0
+    and 0xf0
     jr nz,no_overlap
 
 overlap:
-
-    pop hl
 
     ld c,0x11
 
@@ -454,16 +444,11 @@ overlap:
 
 no_overlap:
 
-    ld a,h
-
-    pop hl
+    ld c,(hl)
     inc l
-    push hl
 
     ; Check if the next section of snake overlaps this quadrant
     djnz next_snake_section
-
-    pop hl
 
     ld c,0x11
 
