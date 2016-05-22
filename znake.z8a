@@ -30,7 +30,7 @@
 ; The high byte contains the X coordinate, and the low byte contains the Y
 ; coordinate
 
-TBL_SNAKE_HISTORY: EQU 0xfd00
+TBL_SNAKE_HISTORY: EQU 0xff00
 
 ; The following tables hold the top-left and bottom-right coordinates of each
 ; free square: i.e., each square that does not contain any snake. This is
@@ -44,9 +44,11 @@ TBL_SNAKE_HISTORY: EQU 0xfd00
 ; The high bytes contain the X coordinates, and the low bytes contain the Y
 ; coordinates
 
-TBL_FREE_SQUARES_TL_TABLE: EQU 0xfe00
+TBL_SNAKE_HISTORY_CLEAN: EQU 0xfc00
 
-TBL_FREE_SQUARES_BR_TABLE: EQU 0xff00
+TBL_FREE_SQUARES_TL_TABLE: EQU 0xfd00
+
+TBL_FREE_SQUARES_BR_TABLE: EQU 0xfe00
 
 org 0x8080
 
@@ -146,6 +148,9 @@ snake_history_tail_offset: db 0x00
 
 ; End offset for snake history
 snake_history_head_offset: db 0x00
+
+; The length of the clean snake history table (byte per item)
+snake_history_clean_length: db 0x00
 
 ; The length of both free squares tables (byte per item)
 free_squares_length: db 0x00
@@ -306,37 +311,29 @@ check_quadrant:
     add a,b
     ld e,a
 
-    ld a,(snake_history_tail_offset)
+    ld c,0xf0
+
+    ld h,(TBL_SNAKE_HISTORY_CLEAN >> 8) & $FF
+
+    ld a,(snake_history_clean_length)
+    dec a
     ld l,a
 
-    ; Initialise counter
-    ld a,(snake_history_head_offset)
-    sub l
-    ld b,a
+    ; Load first turn or head location to register b
+    ld b,(hl)
 
-    ld h,(TBL_SNAKE_HISTORY >> 8) & $FF
-
-    ; Load first turn or tail location to register a
-    ld c,(hl)
-
-    inc l
+    dec l
 
 next_snake_section:
 
-    ; Load second turn or head location to register h
+    ; Load second turn or tail location to register a
     ld a,(hl)
 
-    ; We need to take the lower location from the higher location; thus, we
-    ; need to sort them first. We will use registers l and h, as these have
-    ; become free.
-
-    ; If h > l, the snake is going right or down
-    cp c
+    ; Check which end of the snake section has a higher X or Y value
+    cp b
     jr c,check_no_overlap_pos
 
-    ; Otherwise, the snake is going left or up
-
-    ; TODO: Turn pos and neg routines into a single macro
+    ; TODO: Investigate turning pos and neg routines into a single macro
 
 ; Check no overlap (neg)
 
@@ -351,17 +348,17 @@ next_snake_section:
     jr c,no_overlap
 
     ; Check half carry
-    and 0xf0
+    and c ; 0xf0
     add a,d
     xor (hl)
-    and 0xf0
+    and c ; 0xf0
     jr nz,no_overlap
 
     ; Bottom-right of square (A2)
     ld a,e
 
     ; Minus tail/turn 1 (B1)
-    sub c
+    sub b
 
     ; If carry, B1x > A2x or B1y > A2y
     ; (B1y > A2y only detected in certain edge cases, which is why we check
@@ -369,10 +366,10 @@ next_snake_section:
     jr c,no_overlap
 
     ; Check half carry
-    and 0xf0
-    add a,c
+    and c ; 0xf0
+    add a,b
     xor e
-    and 0xf0
+    and c ; 0xf0
     jr nz,no_overlap
 
     jp overlap
@@ -380,7 +377,7 @@ next_snake_section:
 check_no_overlap_pos:
 
     ; Tail/turn 2 (B2)
-    ld a,c
+    ld a,b
 
     ; Minus top-left of square (A1)
     sub d
@@ -391,10 +388,10 @@ check_no_overlap_pos:
     jr c,no_overlap
 
     ; Check half carry
-    and 0xf0
+    and c ; 0xf0
     add a,d
-    xor c
-    and 0xf0
+    xor b
+    and c ; 0xf0
     jr nz,no_overlap
 
     ; Bottom-right of square (A2)
@@ -409,10 +406,10 @@ check_no_overlap_pos:
     jr c,no_overlap
 
     ; Check half carry
-    and 0xf0
+    and c ; 0xf0
     add a,(hl)
     xor e
-    and 0xf0
+    and c ; 0xf0
     jr nz,no_overlap
 
 overlap:
@@ -444,11 +441,13 @@ overlap:
 
 no_overlap:
 
-    ld c,(hl)
-    inc l
+    ld b,(hl)
 
-    ; Check if the next section of snake overlaps this quadrant
-    djnz next_snake_section
+    ; Decrease l by 1, and loop if l >= 0
+    dec l
+    ld a,l
+    inc a
+    jp nz,next_snake_section
 
     ld c,0x11
 
@@ -457,13 +456,16 @@ no_overlap:
     ld a,(free_squares_length)
     ld l,a
 
+    ; This is a bit flimsy, as it relies on the tables being next to each other
+    ; in a specific order
+
     inc h
-    ; h = 0x81 (TBL_FREE_SQUARES_TL_TABLE)
+    ; h = TBL_FREE_SQUARES_TL_TABLE
 
     ld (hl),d
 
     inc h
-    ; h = 0x82 (TBL_FREE_SQUARES_BR_TABLE)
+    ; h = TBL_FREE_SQUARES_BR_TABLE
 
     ld (hl),e
 
@@ -566,7 +568,7 @@ restart:
 
 draw_top_border:
 
-    ld b,16
+    ld c,16
 
     ; Location of border top
     ld hl,0x8180
@@ -576,20 +578,19 @@ draw_top_border:
 
 draw_top_border_next:
 
-    push bc
     push de
     push hl
     call draw_char
     pop hl
     pop de
-    pop bc
 
     inc d
-    djnz draw_top_border_next
+    dec c
+    jr nz,draw_top_border_next
 
 draw_right_border:
 
-    ld b,16
+    ld c,16
 
     ; Location of border right
     ld hl,0x8188
@@ -599,20 +600,19 @@ draw_right_border:
 
 draw_right_border_next:
 
-    push bc
     push de
     push hl
     call draw_char
     pop hl
     pop de
-    pop bc
 
     inc e
-    djnz draw_right_border_next
+    dec c
+    jr nz,draw_right_border_next
 
 draw_bottom_border:
 
-    ld b,16
+    ld c,16
 
     ; Location of border top
     ld hl,0x8190
@@ -622,20 +622,19 @@ draw_bottom_border:
 
 draw_bottom_border_next:
 
-    push bc
     push de
     push hl
     call draw_char
     pop hl
     pop de
-    pop bc
 
     inc d
-    djnz draw_bottom_border_next
+    dec c
+    jr nz,draw_bottom_border_next
 
 draw_left_border:
 
-    ld b,16
+    ld c,16
 
     ; Location of border right
     ld hl,0x8198
@@ -645,16 +644,15 @@ draw_left_border:
 
 draw_left_border_next:
 
-    push bc
     push de
     push hl
     call draw_char
     pop hl
     pop de
-    pop bc
 
     inc e
-    djnz draw_left_border_next
+    dec c
+    jr nz,draw_left_border_next
 
     ; Location of border top-right
     ld hl,0x81a0
@@ -708,7 +706,7 @@ draw_left_border_next:
     ld hl,flags
     set 0,(hl)
 
-    ; Needed for snake wait overrun check
+    ; Initialise previous frame count
     ld a,(23672)
     ld (previous_frame_count),a
 
@@ -745,17 +743,46 @@ next_game_loop:
     bit 0,a
     jp z,initiate_input_loop
 
+    ; Create a new snake history table, where the data starts at the beginning
+    ; of the table: this means we can free up a register later, as we will not
+    ; need a counter
+
+    ld h,(TBL_SNAKE_HISTORY >> 8) & $FF
+    ld a,(snake_history_tail_offset)
+    ld l,a
+
+    ; Initialise counter
+    ld a,(snake_history_head_offset)
+    sub l
+    inc a
+    ld b,a
+
+    ld (snake_history_clean_length),a
+
+    ld d,(TBL_SNAKE_HISTORY_CLEAN >> 8) & $FF
+    ld e,0
+
+transfer_byte:
+
+    ; Transfer from one table to another. LDIR is not used here, as we need to
+    ; jump to the beginning at table boundaries.
+
+    ld a,(hl)
+    ld (de),a
+    inc l
+    inc e
+    dec b
+    jr nz,transfer_byte
+
+    ; Initialise free squares table
+    xor a ; a = 0
+    ld (free_squares_length),a
+
 ; The following routine finds free space that is not occupied by the snake, and
 ; places new food in this free space. It divides the map into 4 quadrants
 ; (TR, BR, BL, TL); any quadrant that does not contain snake is added to the
 ; free squares tables; any quadrant that does contain snake is further divided
 ; into quadrants until all free space is mapped.
-
-    ; Calculate new food location
-
-    ; Initialise tables
-    xor a ; a = 0
-    ld (free_squares_length),a
 
     ; d: location of top-left quadrant
     ; e: offset to bottom-left quadrant / width / height
