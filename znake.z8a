@@ -30,12 +30,12 @@
 ; The high byte contains the X coordinate, and the low byte contains the Y
 ; coordinate
 
-TBL_SNAKE_HISTORY: EQU 0xff00
+TBL_SNAKE_HISTORY: EQU 0xfd00
 
 ; Note: The food routine relies on the following tables being consecutive and
 ;       in a specific order:
 
-TBL_SNAKE_HISTORY_CLEAN: EQU 0xfc00
+TBL_SNAKE_HISTORY_CLEAN: EQU 0xfa00
 
 ; The following tables hold the top-left and bottom-right coordinates of each
 ; free square: i.e., each square that does not contain any snake. This is
@@ -49,9 +49,9 @@ TBL_SNAKE_HISTORY_CLEAN: EQU 0xfc00
 ; The high bytes contain the X coordinates, and the low bytes contain the Y
 ; coordinates
 
-TBL_FREE_SQUARES_TL_TABLE: EQU 0xfd00
+TBL_FREE_SQUARES_TL_TABLE: EQU 0xfb00
 
-TBL_FREE_SQUARES_BR_TABLE: EQU 0xfe00
+TBL_FREE_SQUARES_BR_TABLE: EQU 0xfc00
 
 org 0x8080
 
@@ -325,9 +325,9 @@ check_quadrant:
     ; Load first turn or head location to register b
     ld b,(hl)
 
-    dec l
-
 next_snake_section:
+
+    dec l
 
     ; Load second turn or tail location to register a
     ld a,(hl)
@@ -446,11 +446,10 @@ no_overlap:
 
     ld b,(hl)
 
-    ; Decrease l by 1, and loop if l >= 0
-    dec l
-    ld a,l
-    inc a
-    jp nz,next_snake_section
+    ; Continue to next snake section if l != 0
+    xor a
+    xor l
+    jr nz,next_snake_section
 
     ld c,0x11
 
@@ -538,14 +537,14 @@ start:
 
     ld (sp_bak),sp
 
-    ld hl,0x9100
+    ld hl,0xfe00
 
     ; Load high byte of pointer table to interrupt vector register
     ld a,h
     ld i,a
 
     ; Load 257 interrupt routine pointers to memory
-    ld de,0x9101
+    ld de,0xfe01
     ld bc,256
     ld (hl),0x80
     ldir
