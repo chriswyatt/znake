@@ -289,6 +289,8 @@ draw_line:
 
 check_quadrants:
 
+    ld ix,next_quadrant
+
     ld c,0x11
 
     ld a,e
@@ -440,7 +442,7 @@ overlap:
     ; Check quadrants within this quadrant
     call check_quadrant
 
-    jp next_quadrant
+    jp (ix) ; Next quadrant
 
 no_overlap:
 
@@ -449,7 +451,7 @@ no_overlap:
     ; Continue to next snake section if l != 0
     xor a
     xor l
-    jr nz,next_snake_section
+    jp nz,next_snake_section
 
     ld c,0x11
 
@@ -1162,7 +1164,7 @@ next_input_loop:
     sub (hl)
 
     ; Snake speed (higher = slower)
-    sub 10
+    sub 8
 
     jp c,read_kempston_d
 
