@@ -290,6 +290,7 @@ draw_line:
 check_quadrants:
 
     ld ix,next_quadrant
+    ld iy,check_quadrant
 
     ld c,0x11
 
@@ -442,7 +443,37 @@ overlap:
     ; Check quadrants within this quadrant
     call check_quadrant
 
-    jp (ix) ; Next quadrant
+next_quadrant:
+
+    ; Pop location of top-left quadrant and offset to bottom-left quadrant
+    ; from the stack
+    pop de
+
+    ld a,e
+    or a
+
+    ; If top-left, return
+    ret z
+
+    jp pe,bottom_right
+
+    cp 0x09
+    jr c,bottom_left
+
+    ; Top-right
+
+    ld a,e
+    rrca
+    rrca
+    rrca
+    rrca
+    or e
+    sub c ; 0x11
+    ld b,a
+
+    ld e,0x00
+
+    jp (iy) ; check_quadrant
 
 no_overlap:
 
@@ -476,37 +507,7 @@ no_overlap:
     inc a
     ld (free_squares_length),a
 
-next_quadrant:
-
-    ; Pop location of top-left quadrant and offset to bottom-left quadrant
-    ; from the stack
-    pop de
-
-    ld a,e
-    or a
-
-    ; If top-left, return
-    ret z
-
-    jp pe,bottom_right
-
-    cp 0x09
-    jr c,bottom_left
-
-    ; Top-right
-
-    ld a,e
-    rrca
-    rrca
-    rrca
-    rrca
-    or e
-    sub c ; 0x11
-    ld b,a
-
-    ld e,0x00
-
-    jp check_quadrant
+    jp (ix) ; next_quadrant
 
 bottom_left:
 
@@ -520,7 +521,7 @@ bottom_left:
     sub c ; 0x11
     ld b,a
 
-    jp check_quadrant
+    jp (iy) ; check_quadrant
 
 bottom_right:
 
@@ -531,7 +532,7 @@ bottom_right:
     and 0xf0
     ld e,a
 
-    jp check_quadrant
+    jp (iy) ; check_quadrant
 
 start:
 
