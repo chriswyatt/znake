@@ -289,9 +289,6 @@ draw_line:
 
 check_quadrants:
 
-    ld ix,next_quadrant
-    ld iy,check_quadrant
-
     ld c,0x11
 
     ld a,e
@@ -556,6 +553,9 @@ start:
     im 2
     ei
 
+    ld ix,next_quadrant
+    ld iy,check_quadrant
+
 restart:
 
     ld sp,(sp_bak)
@@ -764,8 +764,7 @@ next_game_loop:
 
     ld (snake_history_clean_length),a
 
-    ld d,(TBL_SNAKE_HISTORY_CLEAN >> 8) & $FF
-    ld e,0
+    ld de,TBL_SNAKE_HISTORY_CLEAN
 
 transfer_byte:
 
@@ -818,7 +817,7 @@ create_food:
     ld h,(TBL_FREE_SQUARES_TL_TABLE >> 8) & $FF
     ld d,(hl)
 
-    ld h,(TBL_FREE_SQUARES_BR_TABLE >> 8) & $FF
+    inc h ; TBL_FREE_SQUARES_BR_TABLE
     ld e,(hl)
 
     ; Pick a random position within the free square
@@ -1227,7 +1226,7 @@ update_head_history:
 
     ld a,e
     xor b
-    cp 16
+    cp 0x10
     jr c,head_moving_vertically
 
     ; Head moving horizontally
@@ -1700,7 +1699,7 @@ update_tail_history:
     ld a,e
 
     xor d
-    cp 16
+    cp 0x10
     jr c,tail_moving_vertically
 
     ; Tail moving horizontally
