@@ -766,11 +766,6 @@ draw_left_border_next:
 
 next_game_loop:
 
-    ; If food eaten flag is not set, jump
-    ld a,(flags)
-    bit 0,a
-    jp z,initiate_input_loop
-
     ; Create a new snake history table, where the data starts at the beginning
     ; of the table: this means we can free up a register later, as we will not
     ; need a counter
@@ -862,7 +857,12 @@ transfer_byte:
 
     call check_quadrants
 
-create_food:
+    ; If food eaten flag is not set, jump
+    ld a,(flags)
+    bit 0,a
+    jp z,initiate_input_loop
+
+    ; Create food
 
     ; Pick a random quadrant
 
@@ -880,7 +880,7 @@ create_food_bl:
     or a
     jr z,create_food_br
     ld e,TBL_FREE_SQUARES_BL_TL_TABLE & 0x00ff
-    jp create_food_2
+    jp create_food
 
 create_food_br:
 
@@ -888,7 +888,7 @@ create_food_br:
     or a
     jr z,create_food_tr
     ld e,TBL_FREE_SQUARES_BR_TL_TABLE & 0x00ff
-    jp create_food_2
+    jp create_food
 
 create_food_tr:
 
@@ -896,7 +896,7 @@ create_food_tr:
     or a
     jr z,create_food_tl
     ld e,TBL_FREE_SQUARES_TR_TL_TABLE & 0x00ff
-    jp create_food_2
+    jp create_food
 
 create_food_tl:
 
@@ -905,7 +905,7 @@ create_food_tl:
     jr z,create_food_bl
     ld e,TBL_FREE_SQUARES_TL_TL_TABLE & 0x00ff
 
-create_food_2:
+create_food:
 
     ; Pick a random free square
 
