@@ -66,24 +66,24 @@ draw_line:
 
     ret
 
-str_easy: db "Easy\0"
+str_easy: db " Easy\0"
 
-str_medium: db "Medium\0"
+str_medium: db "Normal\0"
 
-str_hard: db "Hard\0"
+str_hard: db " Hard\0"
 
 difficulty: db 0x01
 
 difficulties:
 
     dw str_easy
-    dw 0x0d09
+    dw 0x0c09
 
     dw str_medium
     dw 0x0c0b
 
     dw str_hard
-    dw 0x0d0d
+    dw 0x0c0d
 
 print_next:
 
@@ -124,11 +124,11 @@ multiply:
     pop hl
     jp print_next
 
-select:
+select_difficulty_draw:
 
     ld b,6
 
-select_next:
+select_difficulty_draw_next:
 
     push hl
     push de
@@ -138,7 +138,30 @@ select_next:
     pop de
     pop hl
     inc d
-    djnz select_next
+    djnz select_difficulty_draw_next
+    ret
+
+select_difficulty:
+
+    ld hl,difficulties
+    ld de,4
+    or a ; Reset carry flag
+    sbc hl,de
+
+select_difficulty_move_pointer:
+
+    add hl,de
+    djnz select_difficulty_move_pointer
+
+    push hl
+    pop ix
+
+    ld d,(ix + 3)
+    ld e,(ix + 2)
+
+    ld hl,0x8000
+
+    call select_difficulty_draw
     ret
 
 start:
@@ -147,22 +170,30 @@ start:
     xor a ; a = 0
     call $229B
 
-    ld hl,str_easy
-    ld de,0x0d09
+    ld ix,difficulties
+
+    ld h,(ix + 1)
+    ld l,(ix)
+    ld d,(ix + 3)
+    ld e,(ix + 2)
     call print
 
-    ld hl,str_medium
-    ld de,0x0c0b
+    ld h,(ix + 5)
+    ld l,(ix + 4)
+    ld d,(ix + 7)
+    ld e,(ix + 6)
     call print
 
-    ld hl,str_hard
-    ld de,0x0d0d
+    ld h,(ix + 9)
+    ld l,(ix + 8)
+    ld d,(ix + 11)
+    ld e,(ix + 10)
     call print
 
     ld hl,0x8000
-    ld de,0x0c0b
-
-    call select
+    ld d,(ix + 7)
+    ld e,(ix + 6)
+    call select_difficulty_draw
 
 input_loop:
 
@@ -181,21 +212,6 @@ input_loop:
 kempston_joy_up:
 
     ld a,(hl)
-    inc a
-    cp 0x03
-    jr nz,difficulty_higher
-
-    xor a
-
-difficulty_higher:
-
-    ld d,a
-
-    jp unselect_current_difficulty
-
-kempston_joy_down:
-
-    ld a,(hl)
     dec a
     cp 0xff
     jr nz,difficulty_lower
@@ -206,29 +222,43 @@ difficulty_lower:
 
     ld d,a
 
+    jp unselect_current_difficulty
+
+kempston_joy_down:
+
+    ld a,(hl)
+    inc a
+    cp 0x03
+    jr nz,difficulty_higher
+
+    xor a
+
+difficulty_higher:
+
+    ld d,a
+
 unselect_current_difficulty:
 
+    push de
+
     ld b,(hl)
+    inc b
 
-    ld hl,difficulties
-    ld de,4
+    call select_difficulty
 
-move_pointer:
+; Select new difficulty
 
-    add hl,de
-    djnz move_pointer
+    pop af
 
-    inc hl
-    inc hl
+    ; Store new difficulty
+    ld hl,difficulty
+    ld (hl),a
 
-    ld e,(hl)
-    inc hl
-    ld d,(hl)
+    ld b,a
+    inc b
 
-    ld hl,0x8000
+    call select_difficulty
 
-    call select
-
-    ret
+    jp input_loop
 
 end start
