@@ -730,9 +730,15 @@ draw_left_border_next:
     ld a,3
     ld (snake_length),a
 
+    ld a,(flags)
+
     ; Set food eaten flag
-    ld hl,flags
-    set 0,(hl)
+    set 0,a
+
+    ; Invalidate all free squares tables
+    or 0xf0
+
+    ld (flags),a
 
     ; Initialise previous frame count
     ld a,(23672)
@@ -796,12 +802,52 @@ transfer_byte:
     dec b
     jr nz,transfer_byte
 
-    ; Initialise free squares tables
-    xor a ; a = 0
-    ld (free_squares_bl_length),a
-    ld (free_squares_br_length),a
-    ld (free_squares_tr_length),a
-    ld (free_squares_tl_length),a
+    ; Invalidate any free square quadrants that contain the new position for
+    ; the head
+
+    ld h,(TBL_SNAKE_HISTORY_CLEAN >> 8) & $FF
+    ld a,(snake_history_clean_length)
+    dec a
+    ld l,a
+    ld a,(hl)
+
+    bit 3,a
+    jr nz,ivsq_head_in_bottom_half
+
+    ; Head in top half
+
+    bit 7,a
+    jr nz,ivsq_head_in_top_right
+
+    ; Head in top left
+
+    ld hl,flags
+    set 7,(hl)
+    jp find_free_space
+
+ivsq_head_in_top_right:
+
+    ld hl,flags
+    set 6,(hl)
+    jp find_free_space
+
+ivsq_head_in_bottom_half:
+
+    bit 7,a
+    jr nz,ivsq_head_in_bottom_right
+
+    ; Head in bottom left
+
+    ld hl,flags
+    set 4,(hl)
+    jp find_free_space
+
+ivsq_head_in_bottom_right:
+
+    ld hl,flags
+    set 5,(hl)
+
+find_free_space:
 
 ; The following routine finds free space that is not occupied by the snake, and
 ; places new food in this free space. It divides the map into 4 quadrants
@@ -809,11 +855,18 @@ transfer_byte:
 ; free squares tables; any quadrant that does contain snake is further divided
 ; into quadrants until all free space is mapped.
 
+    ; Check bottom-left free squares cache invalid
+
+    ld a,(flags)
+    bit 4,a
+    jr z,check_br_invalid
+
     ; d: location of top-left quadrant
     ; e: offset to bottom-left quadrant / width / height
     ld de,0x0804
 
     ld hl,free_squares_bl_length
+    ld (hl),0
     ld (free_squares_length_pointer),hl
 
     ld a,TBL_FREE_SQUARES_BL_TL_TABLE & 0x00ff
@@ -821,11 +874,21 @@ transfer_byte:
 
     call check_quadrants
 
+    ld hl,flags
+    res 4,(hl)
+
+check_br_invalid:
+
+    ld a,(flags)
+    bit 5,a
+    jr z,check_tr_invalid
+
     ; d: location of top-left quadrant
     ; e: offset to bottom-left quadrant / width / height
     ld de,0x8804
 
     ld hl,free_squares_br_length
+    ld (hl),0
     ld (free_squares_length_pointer),hl
 
     ld a,TBL_FREE_SQUARES_BR_TL_TABLE & 0x00ff
@@ -833,11 +896,21 @@ transfer_byte:
 
     call check_quadrants
 
+    ld hl,flags
+    res 5,(hl)
+
+check_tr_invalid:
+
+    ld a,(flags)
+    bit 6,a
+    jr z,check_tl_invalid
+
     ; d: location of top-left quadrant
     ; e: offset to bottom-left quadrant / width / height
     ld de,0x8004
 
     ld hl,free_squares_tr_length
+    ld (hl),0
     ld (free_squares_length_pointer),hl
 
     ld a,TBL_FREE_SQUARES_TR_TL_TABLE & 0x00ff
@@ -845,11 +918,21 @@ transfer_byte:
 
     call check_quadrants
 
+    ld hl,flags
+    res 6,(hl)
+
+check_tl_invalid:
+
+    ld a,(flags)
+    bit 7,a
+    jr z,check_create_food
+
     ; d: location of top-left quadrant
     ; e: offset to bottom-left quadrant / width / height
     ld de,0x0004
 
     ld hl,free_squares_tl_length
+    ld (hl),0
     ld (free_squares_length_pointer),hl
 
     ld a,TBL_FREE_SQUARES_TL_TL_TABLE & 0x00ff
@@ -857,10 +940,15 @@ transfer_byte:
 
     call check_quadrants
 
+    ld hl,flags
+    res 7,(hl)
+
+check_create_food:
+
     ; If food eaten flag is not set, jump
     ld a,(flags)
     bit 0,a
-    jp z,initiate_input_loop
+    jp z,invalidate_free_square_quadrants_tail
 
     ; Create food
 
@@ -995,6 +1083,51 @@ create_food:
     ; Reset food eaten flag
     ld hl,flags
     res 0,(hl)
+
+invalidate_free_square_quadrants_tail:
+
+    ; Invalidate any free square quadrants that contain the current position
+    ; for the tail. This tail will have moved by the time we do the next
+    ; free square finding calculations, which is why we do the check now.
+
+    ld hl,TBL_SNAKE_HISTORY_CLEAN
+    ld a,(hl)
+
+    bit 3,a
+    jr nz,ivsq_tail_in_bottom_half
+
+    ; Tail in top half
+
+    bit 7,a
+    jr nz,ivsq_tail_in_top_right
+
+    ; Tail in top left
+
+    ld hl,flags
+    set 7,(hl)
+    jp initiate_input_loop
+
+ivsq_tail_in_top_right:
+
+    ld hl,flags
+    set 6,(hl)
+    jp initiate_input_loop
+
+ivsq_tail_in_bottom_half:
+
+    bit 7,a
+    jr nz,ivsq_tail_in_bottom_right
+
+    ; Tail in bottom left
+
+    ld hl,flags
+    set 4,(hl)
+    jp initiate_input_loop
+
+ivsq_tail_in_bottom_right:
+
+    ld hl,flags
+    set 5,(hl)
 
 initiate_input_loop:
 
