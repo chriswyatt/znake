@@ -49,9 +49,17 @@ TBL_SNAKE_HISTORY_CLEAN: EQU 0xfa00
 ; The high bytes contain the X coordinates, and the low bytes contain the Y
 ; coordinates
 
-TBL_FREE_SQUARES_TL_TABLE: EQU 0xfb00
+TBL_FREE_SQUARES_BL_TL_TABLE: EQU 0xfb00
+TBL_FREE_SQUARES_BL_BR_TABLE: EQU 0xfc00
 
-TBL_FREE_SQUARES_BR_TABLE: EQU 0xfc00
+TBL_FREE_SQUARES_BR_TL_TABLE: EQU 0xfb30
+TBL_FREE_SQUARES_BR_BR_TABLE: EQU 0xfc30
+
+TBL_FREE_SQUARES_TR_TL_TABLE: EQU 0xfb60
+TBL_FREE_SQUARES_TR_BR_TABLE: EQU 0xfc60
+
+TBL_FREE_SQUARES_TL_TL_TABLE: EQU 0xfb90
+TBL_FREE_SQUARES_TL_BR_TABLE: EQU 0xfc90
 
 org 0x8080
 
@@ -156,7 +164,16 @@ snake_history_head_offset: db 0x00
 snake_history_clean_length: db 0x00
 
 ; The length of both free squares tables (byte per item)
-free_squares_length: db 0x00
+free_squares_bl_length: db 0x00
+free_squares_br_length: db 0x00
+free_squares_tr_length: db 0x00
+free_squares_tl_length: db 0x00
+
+; Low byte of current free squares table
+free_squares_low: db 0x00
+
+; Pointer to current free squares table length
+free_squares_length_pointer: dw 0x0000
 
 ; Current direction of snake (bits: 0000UDLR)
 snake_direction_current: db 0x00
@@ -169,7 +186,11 @@ snake_direction_queue: db 0x00
 current_food_location: db 0x00
 
 ; Bit 0: Food eaten
-; Bits 1-7: Reserved
+; Bits 1-3: Reserved
+; Bit 4: Invalidate BL free squares table
+; Bit 5: Invalidate BR free squares table
+; Bit 6: Invalidate TR free squares table
+; Bit 7: Invalidate TL free squares table
 flags: db 0x00
 
 previous_frame_count: db 0x00
@@ -193,8 +214,8 @@ random:
     ld hl,(seed)
 
     ; Keep it within first 8k of ROM.
-    and 31
     ld a,h
+    and 31
     ld h,a
 
     ld a,(hl)
@@ -481,28 +502,30 @@ no_overlap:
     xor l
     jp nz,next_snake_section
 
-    ld c,0x11
-
     ; Otherwise, add this quadrant to the free squares tables
 
-    ld a,(free_squares_length)
+    ld hl,(free_squares_length_pointer)
+    ld a,(hl)
     ld l,a
 
-    ; This is a bit flimsy, as it relies on the tables being next to each other
-    ; in a specific order
+    ld a,(free_squares_low)
+    add a,l
+    ld l,a
 
-    inc h
-    ; h = TBL_FREE_SQUARES_TL_TABLE
+    ; High byte is the same for BL, BR, TR and TL tables
+    ld h,(TBL_FREE_SQUARES_BL_TL_TABLE >> 8) & $FF
 
     ld (hl),d
 
     inc h
-    ; h = TBL_FREE_SQUARES_BR_TABLE
+    ; h = TBL_FREE_SQUARES_??_BR_TABLE
 
     ld (hl),e
 
-    inc a
-    ld (free_squares_length),a
+    ld hl,(free_squares_length_pointer)
+    inc (hl)
+
+    ld c,0x11
 
     jp (ix) ; next_quadrant
 
@@ -778,9 +801,12 @@ transfer_byte:
     dec b
     jr nz,transfer_byte
 
-    ; Initialise free squares table
+    ; Initialise free squares tables
     xor a ; a = 0
-    ld (free_squares_length),a
+    ld (free_squares_bl_length),a
+    ld (free_squares_br_length),a
+    ld (free_squares_tr_length),a
+    ld (free_squares_tl_length),a
 
 ; The following routine finds free space that is not occupied by the snake, and
 ; places new food in this free space. It divides the map into 4 quadrants
@@ -790,34 +816,115 @@ transfer_byte:
 
     ; d: location of top-left quadrant
     ; e: offset to bottom-left quadrant / width / height
-    ld de,0x0008
+    ld de,0x0804
+
+    ld hl,free_squares_bl_length
+    ld (free_squares_length_pointer),hl
+
+    ld a,TBL_FREE_SQUARES_BL_TL_TABLE & 0x00ff
+    ld (free_squares_low),a
+
+    call check_quadrants
+
+    ; d: location of top-left quadrant
+    ; e: offset to bottom-left quadrant / width / height
+    ld de,0x8804
+
+    ld hl,free_squares_br_length
+    ld (free_squares_length_pointer),hl
+
+    ld a,TBL_FREE_SQUARES_BR_TL_TABLE & 0x00ff
+    ld (free_squares_low),a
+
+    call check_quadrants
+
+    ; d: location of top-left quadrant
+    ; e: offset to bottom-left quadrant / width / height
+    ld de,0x8004
+
+    ld hl,free_squares_tr_length
+    ld (free_squares_length_pointer),hl
+
+    ld a,TBL_FREE_SQUARES_TR_TL_TABLE & 0x00ff
+    ld (free_squares_low),a
+
+    call check_quadrants
+
+    ; d: location of top-left quadrant
+    ; e: offset to bottom-left quadrant / width / height
+    ld de,0x0004
+
+    ld hl,free_squares_tl_length
+    ld (free_squares_length_pointer),hl
+
+    ld a,TBL_FREE_SQUARES_TL_TL_TABLE & 0x00ff
+    ld (free_squares_low),a
 
     call check_quadrants
 
 create_food:
 
-    ; Pick a random free square
+    ; Pick a random quadrant
 
-    ld a,(free_squares_length)
+    call random
+    cp 0xc0
+    jr nc,create_food_tl
+    cp 0x80
+    jr nc,create_food_tr
+    cp 0x40
+    jr nc,create_food_br
 
-    ; Skip food generation if snake has filled the screen
-    ; (TODO: End game with congratulatory message)
+create_food_bl:
+
+    ld a,(free_squares_bl_length)
     or a
-    jp z,initiate_input_loop
+    jr z,create_food_br
+    ld e,TBL_FREE_SQUARES_BL_TL_TABLE & 0x00ff
+    jp create_food_2
+
+create_food_br:
+
+    ld a,(free_squares_br_length)
+    or a
+    jr z,create_food_tr
+    ld e,TBL_FREE_SQUARES_BR_TL_TABLE & 0x00ff
+    jp create_food_2
+
+create_food_tr:
+
+    ld a,(free_squares_tr_length)
+    or a
+    jr z,create_food_tl
+    ld e,TBL_FREE_SQUARES_TR_TL_TABLE & 0x00ff
+    jp create_food_2
+
+create_food_tl:
+
+    ld a,(free_squares_tl_length)
+    or a
+    jr z,create_food_bl
+    ld e,TBL_FREE_SQUARES_TL_TL_TABLE & 0x00ff
+
+create_food_2:
+
+    ; Pick a random free square
 
     ; Random number limit
     ld c,a
 
     call random
-    ld b,a
 
+    ld b,a
     call modulo
+
+    add a,e
     ld l,a
 
-    ld h,(TBL_FREE_SQUARES_TL_TABLE >> 8) & $FF
+    ; High byte is the same for BL, BR, TR and TL tables
+    ld h,(TBL_FREE_SQUARES_BL_TL_TABLE >> 8) & $FF
     ld d,(hl)
 
-    inc h ; TBL_FREE_SQUARES_BR_TABLE
+    inc h ; TBL_FREE_SQUARES_??_BR_TABLE
     ld e,(hl)
 
     ; Pick a random position within the free square
