@@ -955,20 +955,13 @@ check_create_food:
     ; Pick a random quadrant
 
     call random
-    cp 0xc0
-    jr nc,create_food_tl
-    cp 0x80
-    jr nc,create_food_tr
-    cp 0x40
-    jr nc,create_food_br
+    and 0xc0
+    jp pe,create_food_left
 
-create_food_bl:
+    ; Otherwise, random quadrant is on the right
 
-    ld a,(free_squares_bl_length)
-    or a
-    jr z,create_food_br
-    ld e,TBL_FREE_SQUARES_BL_TL_TABLE & 0x00ff
-    jp create_food
+    bit 7,a
+    jr nz,create_food_tr
 
 create_food_br:
 
@@ -976,6 +969,18 @@ create_food_br:
     or a
     jr z,create_food_tr
     ld e,TBL_FREE_SQUARES_BR_TL_TABLE & 0x00ff
+    jp create_food
+
+create_food_left:
+
+    jr nz,create_food_tl
+
+create_food_bl:
+
+    ld a,(free_squares_bl_length)
+    or a
+    jr z,create_food_br
+    ld e,TBL_FREE_SQUARES_BL_TL_TABLE & 0x00ff
     jp create_food
 
 create_food_tr:
