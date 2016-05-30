@@ -1110,13 +1110,13 @@ invalidate_free_square_quadrants_tail:
 
     ld hl,flags
     set 7,(hl)
-    jp initiate_input_loop
+    jp next_input_loop
 
 ivsq_tail_in_top_right:
 
     ld hl,flags
     set 6,(hl)
-    jp initiate_input_loop
+    jp next_input_loop
 
 ivsq_tail_in_bottom_half:
 
@@ -1127,14 +1127,15 @@ ivsq_tail_in_bottom_half:
 
     ld hl,flags
     set 4,(hl)
-    jp initiate_input_loop
+    jp next_input_loop
 
 ivsq_tail_in_bottom_right:
 
     ld hl,flags
     set 5,(hl)
+    jp next_input_loop
 
-initiate_input_loop:
+check_input:
 
     ld a,(snake_direction_current)
     ld d,a
@@ -1203,17 +1204,17 @@ read_kempston_hv:
 
     ; If queue contains 1 direction, jump to next input loop
     or a
-    jp po,next_input_loop
+    ret po
 
     ; Else, if queue is empty, jump to next input loop
-    jp z,next_input_loop
+    ret z
 
     ; Otherwise only keep the highest priority direction
     ld a,e
     and 0x0f
     ld e,a
 
-    jp next_input_loop
+    jp save_direction_queue
 
 ; The following bitmasks could also allow the opposite directions too, e.g.
 ; if the bitmask is left, it could also accept right. This would make the
@@ -1234,7 +1235,7 @@ kempston_joy_up_right:
     jr nz,queue_right_up
 
     ; Else ignore
-    jp next_input_loop
+    ret
 
 kempston_joy_down_right:
 
@@ -1247,7 +1248,7 @@ kempston_joy_down_right:
     jr nz,queue_right_down
 
     ; Else ignore
-    jp next_input_loop
+    ret
 
 kempston_joy_down_left:
 
@@ -1260,7 +1261,7 @@ kempston_joy_down_left:
     jr nz,queue_left_down
 
     ; Else ignore
-    jp next_input_loop
+    ret
 
 kempston_joy_up_left:
 
@@ -1273,55 +1274,55 @@ kempston_joy_up_left:
     jr nz,queue_left_up
 
     ; Else ignore
-    jp next_input_loop
+    ret
 
 queue_up_right:
 
     ld e,0x18
 
-    jp next_input_loop
+    jp save_direction_queue
 
 queue_right_up:
 
     ld e,0x81
 
-    jp next_input_loop
+    jp save_direction_queue
 
 queue_right_down:
 
     ld e,0x41
 
-    jp next_input_loop
+    jp save_direction_queue
 
 queue_down_right:
 
     ld e,0x14
 
-    jp next_input_loop
+    jp save_direction_queue
 
 queue_down_left:
 
     ld e,0x24
 
-    jp next_input_loop
+    jp save_direction_queue
 
 queue_left_down:
 
     ld e,0x42
 
-    jp next_input_loop
+    jp save_direction_queue
 
 queue_left_up:
 
     ld e,0x82
 
-    jp next_input_loop
+    jp save_direction_queue
 
 queue_up_left:
 
     ld e,0x28
 
-    jp next_input_loop
+    jp save_direction_queue
 
 kempston_joy_up:
 
@@ -1357,9 +1358,8 @@ kempston_joy_hv:
 
     ; If 0 or 1 last requested directions, jump
 
-    or a
-    jp po,kempston_joy_hv_part_2
-    jr z,kempston_joy_hv_part_2
+    cp 1
+    jr nc,kempston_joy_hv_part_2
 
     ; Otherwise, use the higher bits, as these contain the last requested
     ; direction
@@ -1374,7 +1374,7 @@ kempston_joy_hv_part_2:
 
     ; If last direction requested is not in bitmask, ignore
     and l
-    jr z,next_input_loop
+    jr z,save_direction_queue
 
     ld a,e
 
@@ -1393,13 +1393,21 @@ kempston_joy_hv_part_2:
     or e
     ld e,a
 
-    jp next_input_loop
+    jp save_direction_queue
 
 replace_direction_queue:
 
     ld e,h
 
+save_direction_queue:
+
+    ld a,e
+    ld (snake_direction_queue),a
+    ret
+
 next_input_loop:
+
+    call check_input
 
     ; If the current frame count is less than the previous frame count, plus
     ; frame_wait, then continue input loop
@@ -1411,7 +1419,7 @@ next_input_loop:
     ; Snake speed (higher = slower)
     sub 8
 
-    jp c,read_kempston_d
+    jr c,next_input_loop
 
     ; Otherwise, store the new frame count ...
 
@@ -1421,33 +1429,29 @@ next_input_loop:
     ; ... and update the current direction
 
     ; If direction not queued, jump
-    ld a,e
+    ld a,(snake_direction_queue)
+    ld b,a
     and 0x0f
     jr z,update_head_history
 
     ; Otherwise, update the current direction ...
 
+    ld (snake_direction_current),a
+
+    ; Used in update_head_history
     ld d,a
 
     ; ... and pop the new direction from the direction queue
 
-    ld a,e
+    ld a,b
     rrca
     rrca
     rrca
     rrca
     and 0x0f
-    ld e,a
+    ld (snake_direction_queue),a
 
 update_head_history:
-
-    ; We need to free up these registers now
-
-    ld a,d
-    ld (snake_direction_current),a
-
-    ld a,e
-    ld (snake_direction_queue),a
 
     ld h,(TBL_SNAKE_HISTORY >> 8) & $FF
 
