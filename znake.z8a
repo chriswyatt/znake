@@ -620,12 +620,12 @@ read_kempston_hv:
     ; otherwise the snake may veer off in an unintended direction
 
     ld a,e
+    or a
 
     ; If queue contains 1 direction, jump to next input loop
-    or a
     ret po
 
-    ; Else, if queue is empty, jump to next input loop
+    ; If queue is empty, jump to next input loop
     ret z
 
     ; Otherwise only keep the highest priority direction
@@ -777,8 +777,9 @@ kempston_joy_hv:
 
     ; If 0 or 1 last requested directions, jump
 
-    cp 1
-    jr nc,kempston_joy_hv_part_2
+    or a
+    jp po,kempston_joy_hv_part_2
+    jr z,kempston_joy_hv_part_2
 
     ; Otherwise, use the higher bits, as these contain the last requested
     ; direction
@@ -1125,6 +1126,9 @@ find_free_space:
 ; free squares tables; any quadrant that does contain snake is further divided
 ; into quadrants until all free space is mapped.
 
+    ; The routine may run for a while, so check input occasionally
+    call check_input
+
     ; Check bottom-left free squares cache invalid
 
     ld a,(flags)
@@ -1143,6 +1147,7 @@ find_free_space:
     ld (free_squares_low),a
 
     call check_quadrants
+    call check_input
 
     ld hl,flags
     res 4,(hl)
@@ -1165,6 +1170,7 @@ check_br_invalid:
     ld (free_squares_low),a
 
     call check_quadrants
+    call check_input
 
     ld hl,flags
     res 5,(hl)
@@ -1187,6 +1193,7 @@ check_tr_invalid:
     ld (free_squares_low),a
 
     call check_quadrants
+    call check_input
 
     ld hl,flags
     res 6,(hl)
@@ -1209,6 +1216,7 @@ check_tl_invalid:
     ld (free_squares_low),a
 
     call check_quadrants
+    call check_input
 
     ld hl,flags
     res 7,(hl)
