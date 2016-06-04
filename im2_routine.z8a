@@ -3,7 +3,7 @@
 ; Znake (ZX Spectrum 48K)
 
 ; -----------------------------------------------------------------------------
-; main.z8a
+; im2_routine.z8a
 ; -----------------------------------------------------------------------------
 
 ; Copyright (C) 2016, Chris Wyatt
@@ -14,42 +14,17 @@
 
 ; /////////////////////////////////////////////////////////////////////////////
 
-include const.z8a
+; Interrupt routine.
 
-org 0x8000
+    ex af,af'
+    exx
 
-include vars.z8a
+    ; Increment frame counter
+    ld hl,23672
+    inc (hl)
 
-org 0x8080
+    exx
+    ex af,af'
 
-include im2_routine.z8a
-
-org 0x8100
-
-include graphics.z8a
-
-include utils.z8a
-
-include draw.z8a
-
-include find_free_space.z8a
-
-include input.z8a
-
-start:
-
-include 0_init.z8a
-
-include 1_loop_create_food.z8a
-
-include 2_loop_input.z8a
-
-include 3_loop_move_head_and_check_food_eaten.z8a
-
-include 4_loop_move_tail.z8a
-
-include 5_loop_collision_detection.z8a
-
-include 6_loop_draw_graphics.z8a
-
-end start
+    ei
+    reti

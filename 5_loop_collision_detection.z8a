@@ -1,0 +1,145 @@
+; /////////////////////////////////////////////////////////////////////////////
+
+; Znake (ZX Spectrum 48K)
+
+; -----------------------------------------------------------------------------
+; 5_loop_collision_detection.z8a
+; -----------------------------------------------------------------------------
+
+; Copyright (C) 2016, Chris Wyatt
+
+; All rights reserved
+
+; Distributed under the Apache 2 license (see LICENSE)
+
+; /////////////////////////////////////////////////////////////////////////////
+
+collision_detection:
+
+    ld h,(TBL_SNAKE_HISTORY >> 8) & $FF
+
+    ld a,(snake_history_tail_offset)
+    ld b,a
+
+    ld a,(snake_history_head_offset)
+    ld l,a
+
+    ; Initialise counter
+    sub b
+    ld b,a
+
+    ; Load current snake direction to register e
+    ld a,(snake_direction_current)
+    ld e,a
+
+    ; Load head location to register c (A)
+    ld a,(hl)
+    ld c,a
+
+    ; Load neck location to register d (B1)
+
+    bit 0,e
+    jr nz,head_right_of_neck
+    bit 1,e
+    jr nz,head_left_of_neck
+    bit 2,e
+    jr nz,head_below_neck
+
+; Head above neck
+
+    inc a
+
+    jp check_border_collision_vertical
+
+head_below_neck:
+
+    dec a
+
+    jp check_border_collision_vertical
+
+head_left_of_neck:
+
+    add a,0x10
+
+    jp check_border_collision_horizontal
+
+head_right_of_neck:
+
+    sub 0x10
+
+check_border_collision_horizontal:
+
+    ld d,a
+
+    jp c,restart
+    jp collision_detection_next_snake_section
+
+check_border_collision_vertical:
+
+    ld d,a
+
+    xor c
+    and 0xf0
+    jp nz,restart
+
+collision_detection_next_snake_section:
+
+    dec l
+
+    ; Load second turn or tail location to register e (B2)
+    ld a,(hl)
+    ld e,a
+
+    cp d
+    jr nc,second_turn_higher
+
+    ld e,d
+    ld d,a
+
+second_turn_higher:
+
+    ld a,c
+    cp d
+
+    ; If carry, B1x > Ax or B1y > Ay
+    ; (B1y > Ay only detected in certain edge cases, which is why we
+    ;  isolate the Y nibble in the next check)
+    jr c,no_collision
+
+    ld a,d
+    and 0x0f
+    ld d,a
+    ld a,c
+    and 0x0f
+    sub d
+
+    ; If carry, B1y > Ay
+    jr c,no_collision
+
+    ld a,e
+    cp c
+
+    ; If carry, Ax > B2x or Ay > B2y
+    ; (Ax > B2y only detected in certain edge cases, which is why we
+    ;  isolate the Y nibble in the next check)
+    jr c,no_collision
+
+    ; Isolate Y nibble
+    ld a,c
+    and 0x0f
+    ld d,a
+    ld a,e
+    and 0x0f
+    sub d
+
+    ; If carry, Ay > B2y
+    jr c,no_collision
+
+    ; Collision
+    jp restart
+
+no_collision:
+
+    ld d,(hl)
+
+    djnz collision_detection_next_snake_section
