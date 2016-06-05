@@ -26,7 +26,8 @@ next_input_loop:
     sub (hl)
 
     ; Snake speed (higher = slower)
-    sub 8
+    ld hl,no_of_frames_per_update
+    sub (hl)
 
     jr c,next_input_loop
 

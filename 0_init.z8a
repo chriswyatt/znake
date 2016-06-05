@@ -184,6 +184,8 @@ draw_left_border_next:
     ld (TBL_SNAKE_HISTORY),a
     ld a,0x67
     ld (TBL_SNAKE_HISTORY + 1),a
+    ld a,SNAKE_SPEED
+    ld (no_of_frames_per_update),a
 
     ld a,3
     ld (snake_length),a

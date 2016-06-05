@@ -99,9 +99,6 @@ find_free_space:
 ; free squares tables; any quadrant that does contain snake is further divided
 ; into quadrants until all free space is mapped.
 
-    ; The routine may run for a while, so check input occasionally
-    call check_input
-
     ; Check bottom-left free squares cache invalid
 
     ld a,(flags)
@@ -120,7 +117,6 @@ find_free_space:
     ld (free_squares_low),a
 
     call check_quadrants
-    call check_input
 
     ld hl,flags
     res 4,(hl)
@@ -143,7 +139,6 @@ check_br_invalid:
     ld (free_squares_low),a
 
     call check_quadrants
-    call check_input
 
     ld hl,flags
     res 5,(hl)
@@ -166,7 +161,6 @@ check_tr_invalid:
     ld (free_squares_low),a
 
     call check_quadrants
-    call check_input
 
     ld hl,flags
     res 6,(hl)
@@ -189,7 +183,6 @@ check_tl_invalid:
     ld (free_squares_low),a
 
     call check_quadrants
-    call check_input
 
     ld hl,flags
     res 7,(hl)

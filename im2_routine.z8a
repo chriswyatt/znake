@@ -23,6 +23,8 @@
     ld hl,23672
     inc (hl)
 
+    call check_input
+
     exx
     ex af,af'
 
