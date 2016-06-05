@@ -1,0 +1,64 @@
+; /////////////////////////////////////////////////////////////////////////////
+
+; Znake (ZX Spectrum 48K)
+
+; -----------------------------------------------------------------------------
+; vars.z8a
+; -----------------------------------------------------------------------------
+
+; Copyright (C) 2016, Chris Wyatt
+
+; All rights reserved
+
+; Distributed under the Apache 2 license (see LICENSE)
+
+; /////////////////////////////////////////////////////////////////////////////
+
+; Starting offset for snake history
+snake_history_tail_offset: db 0x00
+
+; End offset for snake history
+snake_history_head_offset: db 0x00
+
+; The length of the clean snake history table (byte per item)
+snake_history_clean_length: db 0x00
+
+; The length of both free squares tables (byte per item)
+free_squares_bl_length: db 0x00
+free_squares_br_length: db 0x00
+free_squares_tr_length: db 0x00
+free_squares_tl_length: db 0x00
+
+; Low byte of current free squares table
+free_squares_low: db 0x00
+
+; Pointer to current free squares table length
+free_squares_length_pointer: dw 0x0000
+
+; Current direction of snake (bits: 0000UDLR)
+snake_direction_current: db 0x00
+
+; Snake direction queue (bits: UDLRUDLR)
+; (low bits have higher priority)
+snake_direction_queue: db 0x00
+
+; The current location of the snake's food
+current_food_location: db 0x00
+
+; Bit 0: Food eaten
+; Bits 1-3: Reserved
+; Bit 4: Invalidate BL free squares table
+; Bit 5: Invalidate BR free squares table
+; Bit 6: Invalidate TR free squares table
+; Bit 7: Invalidate TL free squares table
+flags: db 0x00
+
+previous_frame_count: db 0x00
+
+; Calculating this from snake history would be too expensive
+snake_length: db 0
+
+; Stack pointer backup
+sp_bak: defw 0x0000
+
+seed: defw 0x0000

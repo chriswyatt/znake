@@ -1,0 +1,229 @@
+; /////////////////////////////////////////////////////////////////////////////
+
+; Znake (ZX Spectrum 48K)
+
+; -----------------------------------------------------------------------------
+; 0_init.z8a
+; -----------------------------------------------------------------------------
+
+; Copyright (C) 2016, Chris Wyatt
+
+; All rights reserved
+
+; Distributed under the Apache 2 license (see LICENSE)
+
+; /////////////////////////////////////////////////////////////////////////////
+
+    di
+
+    ld (sp_bak),sp
+
+    ld hl,0xfe00
+
+    ; Load high byte of pointer table to interrupt vector register
+    ld a,h
+    ld i,a
+
+    ; Load 257 interrupt routine pointers to memory
+    ld de,0xfe01
+    ld bc,256
+    ld (hl),0x80
+    ldir
+
+    ; Initialise IM2 interrupt routine
+    im 2
+    ei
+
+    ld ix,next_quadrant
+    ld iy,check_quadrant
+
+restart:
+
+    ld sp,(sp_bak)
+
+    ; Set border color to black
+    xor a ; a = 0
+    call $229B
+
+    ; Clear screen
+    ld hl,0x4000
+    ld de,0x4001
+    ld bc,0x17ff
+    ld (hl),0
+    ldir
+
+draw_top_border:
+
+    ld c,16
+
+    ; Location of border top
+    ld hl,0x8180
+
+    ; Column/row
+    ld de,0x0803
+
+draw_top_border_next:
+
+    push de
+    push hl
+    call draw_char
+    pop hl
+    pop de
+
+    inc d
+    dec c
+    jr nz,draw_top_border_next
+
+draw_right_border:
+
+    ld c,16
+
+    ; Location of border right
+    ld hl,0x8188
+
+    ; Column/row
+    ld de,0x1804
+
+draw_right_border_next:
+
+    push de
+    push hl
+    call draw_char
+    pop hl
+    pop de
+
+    inc e
+    dec c
+    jr nz,draw_right_border_next
+
+draw_bottom_border:
+
+    ld c,16
+
+    ; Location of border top
+    ld hl,0x8190
+
+    ; Column/row
+    ld de,0x0814
+
+draw_bottom_border_next:
+
+    push de
+    push hl
+    call draw_char
+    pop hl
+    pop de
+
+    inc d
+    dec c
+    jr nz,draw_bottom_border_next
+
+draw_left_border:
+
+    ld c,16
+
+    ; Location of border right
+    ld hl,0x8198
+
+    ; Column/row
+    ld de,0x0704
+
+draw_left_border_next:
+
+    push de
+    push hl
+    call draw_char
+    pop hl
+    pop de
+
+    inc e
+    dec c
+    jr nz,draw_left_border_next
+
+    ; Location of border top-right
+    ld hl,0x81a0
+
+    ; Column/row
+    ld de,0x1803
+
+    call draw_char
+
+    ; Location of border bottom-right
+    ld hl,0x81a8
+
+    ; Column/row
+    ld de,0x1814
+
+    call draw_char
+
+    ; Location of border bottom-left
+    ld hl,0x81b0
+
+    ; Column/row
+    ld de,0x0714
+
+    call draw_char
+
+    ; Location of border top-left
+    ld hl,0x81b8
+
+    ; Column/row
+    ld de,0x0703
+
+    call draw_char
+
+    ; Initialise snake
+
+    xor a ; a = 0x00
+    ld (snake_history_tail_offset),a
+    ld a,0x01
+    ld (snake_history_head_offset),a
+    ld a,0x02
+    ld (snake_direction_current),a
+    ld a,0x87
+    ld (TBL_SNAKE_HISTORY),a
+    ld a,0x67
+    ld (TBL_SNAKE_HISTORY + 1),a
+
+    ld a,3
+    ld (snake_length),a
+
+    ld a,(flags)
+
+    ; Set food eaten flag
+    set 0,a
+
+    ; Invalidate all free squares tables
+    or 0xf0
+
+    ld (flags),a
+
+    ; Initialise previous frame count
+    ld a,(23672)
+    ld (previous_frame_count),a
+
+    ; Draw initial snake graphics
+
+    ; Location of snake head left
+    ld hl,0x8120
+
+    ; Column/row
+    ld de,0x0e0b ; 6 + 8, 7 + 4
+
+    call draw_char
+
+    ; Location of snake body left/right
+    ld hl,0x8130
+
+    ; Column/row
+    ld de,0x0f0b ; 7 + 8, 7 + 4
+
+    call draw_char
+
+    ; Location of snake tail right
+    ld hl,0x8160
+
+    ; Column/row
+    ld de,0x100b ; 8 + 8, 7 + 4
+
+    call draw_char

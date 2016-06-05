@@ -11,9 +11,7 @@ Znake was compiled using Pasmo:
 ## Todo
 * High score
 * Title screen
-
-## Known issues
-* Food placement routine is too slow
+* Difficulty selection (i.e. snake speed)
 
 ## License
 See LICENSE

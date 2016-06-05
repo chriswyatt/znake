@@ -1,0 +1,66 @@
+; /////////////////////////////////////////////////////////////////////////////
+
+; Znake (ZX Spectrum 48K)
+
+; -----------------------------------------------------------------------------
+; 6_loop_draw_graphics.z8a
+; -----------------------------------------------------------------------------
+
+; Copyright (C) 2016, Chris Wyatt
+
+; All rights reserved
+
+; Distributed under the Apache 2 license (see LICENSE)
+
+; /////////////////////////////////////////////////////////////////////////////
+
+update_graphics_init:
+
+    ; If food eaten flag is not set, loop 4 times to update grid locations:
+    ; new head, existing head, new tail, existing tail
+
+    ld hl,flags
+    bit 0,(hl)
+
+    halt
+
+    jr z,draw_tail
+
+    ; Otherwise, loop 2 times to update grid locations: new head, existing head
+
+    ld c,3
+
+    jp update_graphics
+
+draw_tail:
+
+    ld c,5
+
+update_graphics:
+
+    dec c
+    jp z,next_game_loop
+
+    pop hl
+
+    ; Load x-coordinate into register b
+    ld a,h
+    rrca
+    rrca
+    rrca
+    rrca
+    and 0x0f
+    add a,8
+    ld d,a
+
+    ; Load y-coordinate into register c
+    ld a,h
+    and 0x0f
+    add a,4
+    ld e,a
+
+    ld h,0x81
+
+    call draw_char
+
+    jp update_graphics
