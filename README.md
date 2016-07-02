@@ -15,3 +15,6 @@ Znake was assembled using Pasmo:
 
 ## License
 See LICENSE
+
+## Contact
+If you would like to contact me, please email chris ~.d0t.~ wyatt ~.at.~ zoho.com
