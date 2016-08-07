@@ -38,18 +38,22 @@ include input.z8a
 
 start:
 
-include 0_init.z8a
+jp menu_start
 
-include 1_loop_create_food.z8a
+include 0_menu.z8a
 
-include 2_loop_input.z8a
+include 1_init.z8a
 
-include 3_loop_move_head_and_check_food_eaten.z8a
+include 2_loop_create_food.z8a
 
-include 4_loop_move_tail.z8a
+include 3_loop_input.z8a
 
-include 5_loop_collision_detection.z8a
+include 4_loop_move_head.z8a
 
-include 6_loop_draw_graphics.z8a
+include 5_loop_move_tail.z8a
+
+include 6_loop_collision_detection.z8a
+
+include 7_loop_draw_graphics.z8a
 
 end start

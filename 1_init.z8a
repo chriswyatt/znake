@@ -14,6 +14,8 @@
 
 ; /////////////////////////////////////////////////////////////////////////////
 
+init:
+
     di
 
     ld (sp_bak),sp
@@ -40,10 +42,6 @@
 restart:
 
     ld sp,(sp_bak)
-
-    ; Set border color to black
-    xor a ; a = 0
-    call $229B
 
     ; Clear screen
     ld hl,0x4000
@@ -184,7 +182,20 @@ draw_left_border_next:
     ld (TBL_SNAKE_HISTORY),a
     ld a,0x67
     ld (TBL_SNAKE_HISTORY + 1),a
-    ld a,SNAKE_SPEED
+
+    ld de,DIFFICULTIES_ROW_LENGTH
+    ld hl,difficulties + 4 - DIFFICULTIES_ROW_LENGTH
+    ld a,(difficulty)
+    inc a
+    ld b,a
+
+inc_difficulty:
+
+    add hl,de
+
+    djnz inc_difficulty
+
+    ld a,(hl)
     ld (no_of_frames_per_update),a
 
     ld a,3

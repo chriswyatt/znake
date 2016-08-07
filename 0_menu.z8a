@@ -1,13 +1,7 @@
-org 0x8000
-
-graphics:
-
-db 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
-
 menu_last_direction: db 0x00
 menu_last_direction_frame_count: db 0x00
 
-draw_char:
+menu_draw_char:
 
 ; Takes column/row (bc) and pointer (hl) and draws a character to the display
 ; buffer
@@ -53,7 +47,7 @@ draw_char:
     ; A character has 8 lines
     ld b,8
 
-draw_line:
+menu_draw_line:
 
 ; Draw a character line by line
 
@@ -65,7 +59,7 @@ draw_line:
     ; The high byte is incremented to get the destination of the next line
     inc d
 
-    djnz draw_line
+    djnz menu_draw_line
 
     ret
 
@@ -77,16 +71,20 @@ str_hard: db " Hard\0"
 
 difficulty: db 0x01
 
+; string, display location, snake speed
 difficulties:
 
     dw str_easy
     dw 0x0c09
+    db 12
 
     dw str_medium
     dw 0x0c0b
+    db 9
 
     dw str_hard
     dw 0x0c0d
+    db 6
 
 print_next:
 
@@ -122,7 +120,7 @@ multiply:
     add hl,de
     pop de
     push de
-    call draw_char
+    call menu_draw_char
     pop de
     pop hl
     jp print_next
@@ -136,7 +134,7 @@ select_difficulty_draw_next:
     push hl
     push de
     push bc
-    call draw_char
+    call menu_draw_char
     pop bc
     pop de
     pop hl
@@ -147,7 +145,7 @@ select_difficulty_draw_next:
 select_difficulty:
 
     ld hl,difficulties
-    ld de,4
+    ld de,DIFFICULTIES_ROW_LENGTH
     or a ; Reset carry flag
     sbc hl,de
 
@@ -162,12 +160,12 @@ select_difficulty_move_pointer:
     ld d,(ix + 3)
     ld e,(ix + 2)
 
-    ld hl,0x8000
+    ld hl,0x81c0
 
     call select_difficulty_draw
     ret
 
-start:
+menu_start:
 
     ld a,(23672)
     ld (menu_last_direction_frame_count),a
@@ -175,6 +173,13 @@ start:
     ; Set border color to black
     xor a ; a = 0
     call $229B
+
+    ; Clear screen
+    ld hl,0x4000
+    ld de,0x4001
+    ld bc,0x17ff
+    ld (hl),0
+    ldir
 
     ld ix,difficulties
 
@@ -184,21 +189,21 @@ start:
     ld e,(ix + 2)
     call print
 
-    ld h,(ix + 5)
-    ld l,(ix + 4)
-    ld d,(ix + 7)
-    ld e,(ix + 6)
+    ld h,(ix + 6)
+    ld l,(ix + 5)
+    ld d,(ix + 8)
+    ld e,(ix + 7)
     call print
 
-    ld h,(ix + 9)
-    ld l,(ix + 8)
-    ld d,(ix + 11)
-    ld e,(ix + 10)
+    ld h,(ix + 11)
+    ld l,(ix + 10)
+    ld d,(ix + 13)
+    ld e,(ix + 12)
     call print
 
-    ld hl,0x8000
-    ld d,(ix + 7)
-    ld e,(ix + 6)
+    ld hl,0x81c0
+    ld d,(ix + 8)
+    ld e,(ix + 7)
     call select_difficulty_draw
 
 input_loop:
@@ -206,8 +211,8 @@ input_loop:
     ; Kempston
     in a,(0x1f)
 
-    ; Only capture up/down
-    and 0x0c
+    ; Only capture up/down/fire
+    and 0x1c
 
     ld b,a
 
@@ -217,6 +222,9 @@ input_loop:
     jr nz,menu_change_direction
 
     ; Same direction
+
+    bit 4,a
+    jr nz,init
 
     ld a,(23672)
     ld hl,menu_last_direction_frame_count
@@ -236,14 +244,14 @@ menu_change_direction:
     ld a,b
 
     bit 3,a
-    jr nz,kempston_joy_up
+    jr nz,menu_kempston_joy_up
 
     bit 2,a
-    jr nz,kempston_joy_down
+    jr nz,menu_kempston_joy_down
 
     jr input_loop
 
-kempston_joy_up:
+menu_kempston_joy_up:
 
     ld a,(hl)
     dec a
@@ -258,7 +266,7 @@ difficulty_lower:
 
     jr unselect_current_difficulty
 
-kempston_joy_down:
+menu_kempston_joy_down:
 
     ld a,(hl)
     inc a
@@ -294,5 +302,3 @@ unselect_current_difficulty:
     call select_difficulty
 
     jr input_loop
-
-end start
