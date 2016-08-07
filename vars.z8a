@@ -55,6 +55,9 @@ flags: db 0x00
 
 previous_frame_count: db 0x00
 
+; i.e. snake speed (higher = slower)
+no_of_frames_per_update: db 0x00
+
 ; Calculating this from snake history would be too expensive
 snake_length: db 0
 
