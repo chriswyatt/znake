@@ -4,6 +4,9 @@ graphics:
 
 db 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
 
+menu_last_direction: db 0x00
+menu_last_direction_frame_count: db 0x00
+
 draw_char:
 
 ; Takes column/row (bc) and pointer (hl) and draws a character to the display
@@ -166,6 +169,9 @@ select_difficulty_move_pointer:
 
 start:
 
+    ld a,(23672)
+    ld (menu_last_direction_frame_count),a
+
     ; Set border color to black
     xor a ; a = 0
     call $229B
@@ -197,9 +203,37 @@ start:
 
 input_loop:
 
+    ; Kempston
     in a,(0x1f)
 
+    ; Only capture up/down
+    and 0x0c
+
+    ld b,a
+
+    ld hl,menu_last_direction
+    cp (hl)
+
+    jr nz,menu_change_direction
+
+    ; Same direction
+
+    ld a,(23672)
+    ld hl,menu_last_direction_frame_count
+    sub (hl)
+    sub 20
+    jr c,input_loop
+
+menu_change_direction:
+
+    ld a,b
+    ld (menu_last_direction),a
+    ld a,(23672)
+    ld (menu_last_direction_frame_count),a
+
     ld hl,difficulty
+
+    ld a,b
 
     bit 3,a
     jr nz,kempston_joy_up
@@ -207,7 +241,7 @@ input_loop:
     bit 2,a
     jr nz,kempston_joy_down
 
-    jp input_loop
+    jr input_loop
 
 kempston_joy_up:
 
@@ -222,7 +256,7 @@ difficulty_lower:
 
     ld d,a
 
-    jp unselect_current_difficulty
+    jr unselect_current_difficulty
 
 kempston_joy_down:
 
@@ -259,6 +293,6 @@ unselect_current_difficulty:
 
     call select_difficulty
 
-    jp input_loop
+    jr input_loop
 
 end start
