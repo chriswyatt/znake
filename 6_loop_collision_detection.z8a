@@ -71,7 +71,7 @@ check_border_collision_horizontal:
 
     ld d,a
 
-    jp c,restart
+    jp c,menu_start
     jp collision_detection_next_snake_section
 
 check_border_collision_vertical:
@@ -80,7 +80,7 @@ check_border_collision_vertical:
 
     xor c
     and 0xf0
-    jp nz,restart
+    jp nz,menu_start
 
 collision_detection_next_snake_section:
 
@@ -136,7 +136,7 @@ second_turn_higher:
     jr c,no_collision
 
     ; Collision
-    jp restart
+    jp menu_start
 
 no_collision:
 
