@@ -1,3 +1,19 @@
+; /////////////////////////////////////////////////////////////////////////////
+
+; Znake (ZX Spectrum 48K)
+
+; -----------------------------------------------------------------------------
+; 1_menu.z8a
+; -----------------------------------------------------------------------------
+
+; Copyright (C) 2016, Chris Wyatt
+
+; All rights reserved
+
+; Distributed under the Apache 2 license (see LICENSE)
+
+; /////////////////////////////////////////////////////////////////////////////
+
 menu_draw_char:
 
 ; Takes column/row (bc) and pointer (hl) and draws a character to the display
