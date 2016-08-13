@@ -14,6 +14,32 @@
 
 ; /////////////////////////////////////////////////////////////////////////////
 
+menu_last_direction: db 0x00
+menu_last_direction_frame_count: db 0x00
+
+str_easy: db " Easy\0"
+
+str_medium: db "Normal\0"
+
+str_hard: db " Hard\0"
+
+difficulty: db 0x01
+
+; string, display location, snake speed
+difficulties:
+
+    dw str_easy
+    dw 0x0c09
+    db 12
+
+    dw str_medium
+    dw 0x0c0b
+    db 9
+
+    dw str_hard
+    dw 0x0c0d
+    db 6
+
 ; Starting offset for snake history
 snake_history_tail_offset: db 0x00
 
