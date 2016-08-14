@@ -14,45 +14,6 @@
 
 ; /////////////////////////////////////////////////////////////////////////////
 
-print_next:
-
-    inc hl
-    inc d
-
-print:
-
-    ld a,(hl)
-    or a
-    cp 0
-    ret z
-
-    push hl
-    push de
-
-print_char:
-
-    ld b,3
-
-    ld h,0
-    ld l,a
-
-multiply:
-
-    add hl,hl
-    djnz multiply
-
-    ld d,h
-    ld e,l
-
-    ld hl,0x3d00 - (8 * 0x20)
-    add hl,de
-    pop de
-    push de
-    call draw_char
-    pop de
-    pop hl
-    jp print_next
-
 select_difficulty_draw:
 
     ld b,6
