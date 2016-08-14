@@ -138,21 +138,17 @@ menu_start:
     ld b,a
 
     ld de,5
-    ld hl,difficulties - 3
+    ld ix,difficulties - 3
 
 select_difficulty_offset_increment:
 
-    add hl,de
+    add ix,de
 
     djnz select_difficulty_offset_increment
 
-    ld a,(hl)
-    ld e,a
-    inc hl
-    ld a,(hl)
-    ld d,a
-
     ld hl,0x81c0
+    ld d,(ix + 1)
+    ld e,(ix)
     call select_difficulty_draw
 
 input_loop:
