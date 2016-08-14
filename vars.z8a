@@ -90,3 +90,8 @@ no_of_frames_per_update: db 0x00
 snake_length: db 0
 
 seed: defw 0x0000
+
+; BCD
+score: dw 0x0000
+
+str_score db "    \0"

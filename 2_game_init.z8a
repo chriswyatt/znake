@@ -179,6 +179,19 @@ inc_difficulty:
     ld a,3
     ld (snake_length),a
 
+    ; Reset score
+    xor a
+    ld (score),a
+    ld (score + 1),a
+
+    ; Reset first 4 bytes of score string
+    ld ix,str_score
+    ld a,0x30 ; 0 (ASCII)
+    ld (ix),a
+    ld (ix + 1),a
+    ld (ix + 2),a
+    ld (ix + 3),a
+
     ld a,(flags)
 
     ; Set food eaten flag
