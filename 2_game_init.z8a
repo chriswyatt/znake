@@ -19,8 +19,6 @@ init:
     ld hl,flags
     res 1,(hl)
 
-    ld sp,(sp_bak)
-
     ; Clear screen
     ld hl,0x4000
     ld de,0x4001

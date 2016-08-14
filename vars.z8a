@@ -89,7 +89,4 @@ no_of_frames_per_update: db 0x00
 ; Calculating this from snake history would be too expensive
 snake_length: db 0
 
-; Stack pointer backup
-sp_bak: defw 0x0000
-
 seed: defw 0x0000

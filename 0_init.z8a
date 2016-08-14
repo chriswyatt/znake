@@ -16,8 +16,6 @@
 
 di
 
-ld (sp_bak),sp
-
 ld hl,0xfe00
 
 ; Load high byte of pointer table to interrupt vector register
