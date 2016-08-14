@@ -1,13 +1,20 @@
 # znake
 Snake clone written in Z80 assembly for the ZX Spectrum
 
-## Why? There are already thousands of Snake clones. Why do we need another one?
-Mainly as a programming exercise, as I had always programmed using high-level languages, and for a long time I have wanted to try my hand at something lower-level (e.g. C or assembly). I also wanted to produce some well-documented code that may help others who are having a go at learning assembly. I picked Snake as it was quite a simple game, and I didn't want to overwhelm myself with anything too complicated.
+## Why?
+Mainly as a programming exercise. I have always programmed using high-level languages and had always wanted to try my hand at something lower-level. I picked Snake, because it's a (relatively) simple game, and I have fond memories of it on Microsoft QBASIC and old Nokia handsets.
 
-If anyone would like to help me polish the game (even if only the graphics), please contact me. Any help with the game would be greatly appreciated.
+I decided to code for the ZX Spectrum as I had started learning BASIC on a ZX Spectrum as a child. Unfortunately the ZX Spectrum died before I had got very far with learning it.
+
+If anyone would like to help me improve the game (even if only the graphics), please contact me. If you would like to help with the look of the game, coding skills are not required.
+
+This is my first attempt at assembly so the code is probably not a fantastic example. I am open to suggestions/improvements; however as I work on this project in my spare time, it could take me a while to address them.
 
 ## How to play
 You will need to download [znake.tap](znake.tap) and you will need an emulator, e.g. [Speccy](http://fms.komkon.org/Speccy/). The Kempston joystick interface must be enabled, as keyboard controls are not currently supported.
+
+## ZX Vega
+The game will 'just work' on the ZX Vega; a keymap is not required.
 
 ## Assemble
 Znake was assembled using Pasmo:
