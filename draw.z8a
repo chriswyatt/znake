@@ -17,7 +17,7 @@
 draw_char:
 
 ; Takes column/row (bc) and pointer (hl) and draws a character to the display
-; buffer
+; buffer. Set iy to either draw_line or draw_line_xor before calling.
 
     ; Get the memory location of the first line of a character
 
@@ -60,6 +60,8 @@ draw_char:
     ; A character has 8 lines
     ld b,8
 
+    jp (iy)
+
 draw_line:
 
 ; Draw a character line by line
@@ -72,5 +74,21 @@ draw_line:
     inc d
 
     djnz draw_line
+
+    ret
+
+draw_line_xor:
+
+; Draw a character line by line and xor with existing line
+
+    ld a,(de)
+    xor (hl)
+    ld (de),a
+    inc l
+
+    ; The high byte is incremented to get the destination of the next line
+    inc d
+
+    djnz draw_line_xor
 
     ret

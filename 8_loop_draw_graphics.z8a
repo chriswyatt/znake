@@ -38,6 +38,10 @@ draw_tail:
 
 update_graphics:
 
+    ld iy,draw_line
+
+update_graphics_next:
+
     dec c
     jp z,next_game_loop
 
@@ -63,4 +67,4 @@ update_graphics:
 
     call draw_char
 
-    jp update_graphics
+    jp update_graphics_next

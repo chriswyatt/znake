@@ -16,10 +16,8 @@
 
 init:
 
-    ld ix,next_quadrant
-    ld iy,check_quadrant
-
-restart:
+    ld hl,flags
+    res 1,(hl)
 
     ld sp,(sp_bak)
 
@@ -29,6 +27,8 @@ restart:
     ld bc,0x17ff
     ld (hl),0
     ldir
+
+    ld iy,draw_line
 
 draw_top_border:
 

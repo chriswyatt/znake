@@ -99,6 +99,9 @@ find_free_space:
 ; free squares tables; any quadrant that does contain snake is further divided
 ; into quadrants until all free space is mapped.
 
+    ld ix,next_quadrant
+    ld iy,check_quadrant
+
     ; Check bottom-left free squares cache invalid
 
     ld a,(flags)
@@ -188,6 +191,8 @@ check_tl_invalid:
     res 7,(hl)
 
 check_create_food:
+
+    ld iy,draw_line
 
     ; If food eaten flag is not set, jump
     ld a,(flags)
@@ -326,6 +331,7 @@ create_food:
     add a,4
     ld e,a
 
+    ld iy,draw_line
     halt
     call draw_char
 
