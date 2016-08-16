@@ -151,13 +151,18 @@ draw_left_border_next:
     ; Initialise snake
 
     xor a ; a = 0x00
+    ld (snake_direction_queue),a
     ld (snake_history_tail_offset),a
+
     ld a,0x01
     ld (snake_history_head_offset),a
+
     ld a,0x02
     ld (snake_direction_current),a
+
     ld a,0x87
     ld (TBL_SNAKE_HISTORY),a
+
     ld a,0x67
     ld (TBL_SNAKE_HISTORY + 1),a
 
@@ -180,17 +185,13 @@ inc_difficulty:
     ld (snake_length),a
 
     ; Reset score
-    xor a
-    ld (score),a
-    ld (score + 1),a
+    ld hl,0x0000
+    ld (score),hl
 
-    ; Reset first 4 bytes of score string
-    ld ix,str_score
-    ld a,0x30 ; 0 (ASCII)
-    ld (ix),a
-    ld (ix + 1),a
-    ld (ix + 2),a
-    ld (ix + 3),a
+    ; Reset score string
+    ld hl,0x3030 ; '00'
+    ld (str_score),hl
+    ld (str_score + 2),hl
 
     ld a,(flags)
 
