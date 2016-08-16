@@ -154,10 +154,10 @@ draw_left_border_next:
     ld (snake_direction_queue),a
     ld (snake_history_tail_offset),a
 
-    ld a,0x01
+    inc a ; a = 0x01
     ld (snake_history_head_offset),a
 
-    ld a,0x02
+    inc a ; a = 0x02
     ld (snake_direction_current),a
 
     ld a,0x87
