@@ -14,7 +14,7 @@ gen_score_str:
 
     inc hl
 
-    ld a,(hl); score + 1
+    ld a,(hl) ; score + 1
     and 0xf0
     rrca
     rrca
@@ -23,28 +23,30 @@ gen_score_str:
     add a,b ; 0x30
     ld (de),a ; str_score
 
-    ld a,(hl)
+    inc de
+
+    ld a,(hl) ; score + 1
     and 0x0f
     add a,b ; 0x30
-    inc de
     ld (de),a ; str_score + 1
 
     dec hl
+    inc de
 
-    ld a,(hl); score
+    ld a,(hl) ; score
     and 0xf0
     rrca
     rrca
     rrca
     rrca
     add a,b ; 0x30
-    inc de
     ld (de),a ; str_score + 2
 
-    ld a,(hl)
+    inc de
+
+    ld a,(hl) ; score
     and 0x0f
     add a,b ; 0x30
-    inc de
     ld (de),a ; str_score + 3
 
     ret
