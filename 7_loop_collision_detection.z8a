@@ -150,7 +150,7 @@ collision:
     ld hl,(score)
     ld (hi_score),hl
 
-    ld hl,hi_score + 1
+    ld hl,hi_score
     ld de,str_hi_score
     call gen_score_str
 

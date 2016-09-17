@@ -1,15 +1,17 @@
 gen_score_str:
 
-; Modifies registers a, f, b, d, e, h, l
+; Modifies registers a, f, b, d, e
 
 ; de register pair must be set to the address of the initial byte of the
 ; string. The first 4 bytes of the string will be set to the score, converted
 ; to ASCII and with a fixed length of 4.
 
-; hl register pair must be set to the address of the 2nd byte of the score,
-; where the score is stored as a little endian BCD word.
+; hl register pair must be set to the memory address of the score
+; (encoded as BCD, little endian)
 
     ld b,0x30
+
+    inc hl
 
     ld a,(hl)
     and 0xf0
