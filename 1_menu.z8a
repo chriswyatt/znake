@@ -161,31 +161,24 @@ menu_kempston_joy_up:
 
     ld a,(hl)
     dec a
-    cp 0xff
-    jr nz,difficulty_lower
+    jp p,unselect_current_difficulty
 
     ld a,2
 
-difficulty_lower:
-
-    ld d,a
-
-    jr unselect_current_difficulty
+    jp unselect_current_difficulty
 
 menu_kempston_joy_down:
 
     ld a,(hl)
     inc a
-    cp 0x03
-    jr nz,difficulty_higher
+    cp 3
+    jr nz,unselect_current_difficulty
 
     xor a
 
-difficulty_higher:
+unselect_current_difficulty:
 
     ld d,a
-
-unselect_current_difficulty:
 
     push de
 

@@ -29,7 +29,7 @@ update_graphics_init:
     ld a,(flags)
     cpl
     and 0x01
-    rlca
+    add a,a
     add a,3
     ld c,a
 
