@@ -30,7 +30,7 @@ update_graphics_init:
     ld c,0x01
     and c
     xor c
-    rla
+    rlca
     add a,3
     ld c,a
 
