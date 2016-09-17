@@ -1,13 +1,14 @@
 gen_score_str:
 
+; Converts a BCD encoded score (word) to a fixed length, ASCII encoded score
+; (double word)
+
 ; Modifies registers a, f, b, d, e
 
-; de register pair must be set to the address of the initial byte of the
-; string. The first 4 bytes of the string will be set to the score, converted
-; to ASCII and with a fixed length of 4.
+; de register pair must be set to the destination memory address (double word)
 
 ; hl register pair must be set to the memory address of the score
-; (encoded as BCD, little endian)
+; (word, encoded as BCD, little endian)
 
     ld b,0x30
 
