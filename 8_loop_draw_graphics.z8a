@@ -16,10 +16,6 @@
 
 update_graphics_init:
 
-    ld hl,str_score
-    ld de,0x0b02
-    call print
-
     ; If food eaten flag is not set, loop 4 times to update grid locations:
     ; new head, existing head, new tail, existing tail
 
@@ -29,6 +25,10 @@ update_graphics_init:
     halt
 
     jr z,draw_tail
+
+    ld hl,str_score
+    ld de,0x0b02
+    call print
 
     ; Otherwise, loop 2 times to update grid locations: new head, existing head
 

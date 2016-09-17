@@ -148,21 +148,6 @@ draw_left_border_next:
 
     call draw_char
 
-    ; Score label
-    ld de,0x0802
-    ld hl,str_score_lbl
-    call print
-
-    ; High score label
-    ld de,0x1102
-    ld hl,str_hi_score_lbl
-    call print
-
-    ; High score
-    ld de,0x1402
-    ld hl,str_hi_score
-    call print
-
     ; Initialise snake
 
     xor a ; a = 0x00
@@ -207,6 +192,26 @@ inc_difficulty:
     ld hl,0x3030 ; '00'
     ld (str_score),hl
     ld (str_score + 2),hl
+
+    ; Score label
+    ld de,0x0802
+    ld hl,str_score_lbl
+    call print
+
+    ; Score
+    ld de,0x0b02
+    ld hl,str_score
+    call print
+
+    ; High score label
+    ld de,0x1102
+    ld hl,str_hi_score_lbl
+    call print
+
+    ; High score
+    ld de,0x1402
+    ld hl,str_hi_score
+    call print
 
     ld a,(flags)
 
