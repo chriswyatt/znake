@@ -14,7 +14,7 @@ gen_score_str:
 
     inc hl
 
-    ld a,(hl)
+    ld a,(hl); score + 1
     and 0xf0
     rrca
     rrca
@@ -31,7 +31,7 @@ gen_score_str:
 
     dec hl
 
-    ld a,(hl)
+    ld a,(hl); score
     and 0xf0
     rrca
     rrca
