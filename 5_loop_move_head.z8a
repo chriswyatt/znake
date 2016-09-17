@@ -486,26 +486,19 @@ check_food_eaten:
 
     ld hl,score
 
-    ld a,(hl)
-    or a
-    add a,10
+    ld a,10
+    add a,(hl)
     daa
     ld (hl),a
 
     inc hl
 
-    ld de,str_score
-
-    jr nc,skip_inc_score_high_bit
-
-    ld a,(hl)
-    or a
-    inc a
+    ld a,0
+    adc a,(hl)
     daa
     ld (hl),a
 
-skip_inc_score_high_bit:
-
+    ld de,str_score
     call gen_score_str
 
     ; Skip tail update (i.e. grow snake)
