@@ -98,3 +98,8 @@ seed: defw 0x0000
 score: dw 0x0000
 
 str_score db "    \0"
+
+; BCD
+hi_score: dw 0x0000
+
+str_hi_score db "    \0"

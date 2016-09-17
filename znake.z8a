@@ -36,6 +36,8 @@ include find_free_space.z8a
 
 include input.z8a
 
+include score.z8a
+
 start:
 
 include 0_init.z8a

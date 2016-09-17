@@ -1,0 +1,44 @@
+gen_score_str:
+
+; Modifies registers a, f, b, d, e, h, l
+
+; de register pair must be set to the address of the initial byte of the
+; string. The first 4 bytes of the string will be set to the score, converted
+; to ASCII and with a fixed length of 4.
+
+    ld b,0x30
+
+    ld a,(hl)
+    and 0xf0
+    rrca
+    rrca
+    rrca
+    rrca
+    add a,b ; 0x30
+    ld (de),a ; str_score
+
+    ld a,(hl)
+    and 0x0f
+    add a,b ; 0x30
+    inc de
+    ld (de),a ; str_score + 1
+
+    dec hl
+
+    ld a,(hl)
+    and 0xf0
+    rrca
+    rrca
+    rrca
+    rrca
+    add a,b ; 0x30
+    inc de
+    ld (de),a ; str_score + 2
+
+    ld a,(hl)
+    and 0x0f
+    add a,b ; 0x30
+    inc de
+    ld (de),a ; str_score + 3
+
+    ret

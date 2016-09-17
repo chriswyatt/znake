@@ -482,7 +482,7 @@ check_food_eaten:
     ld hl,snake_length
     inc (hl)
 
-    ; Increase score
+    ; Increase score by 10
 
     ld hl,score
 
@@ -494,9 +494,9 @@ check_food_eaten:
 
     inc hl
 
-    jr nc,gen_score_str
+    ld de,str_score
 
-; Update score high bit
+    jr nc,skip_inc_score_high_bit
 
     ld a,(hl)
     or a
@@ -504,43 +504,9 @@ check_food_eaten:
     daa
     ld (hl),a
 
-gen_score_str:
+skip_inc_score_high_bit:
 
-    ld de,str_score
-    ld b,0x30
-
-    ld a,(hl)
-    and 0xf0
-    rrca
-    rrca
-    rrca
-    rrca
-    add a,b ; 0x30
-    ld (de),a ; str_score
-
-    ld a,(hl)
-    and 0x0f
-    add a,b ; 0x30
-    inc de
-    ld (de),a ; str_score + 1
-
-    dec hl
-
-    ld a,(hl)
-    and 0xf0
-    rrca
-    rrca
-    rrca
-    rrca
-    add a,b ; 0x30
-    inc de
-    ld (de),a ; str_score + 2
-
-    ld a,(hl)
-    and 0x0f
-    add a,b ; 0x30
-    inc de
-    ld (de),a ; str_score + 3
+    call gen_score_str
 
     ; Skip tail update (i.e. grow snake)
     jp collision_detection

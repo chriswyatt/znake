@@ -153,6 +153,11 @@ draw_left_border_next:
     ld hl,str_score_lbl
     call print
 
+    ; High score label
+    ld de,0x1102
+    ld hl,str_hi_score_lbl
+    call print
+
     ; Initialise snake
 
     xor a ; a = 0x00
