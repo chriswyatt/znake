@@ -142,6 +142,9 @@ collision:
     ld hl,(score)
     ld de,(hi_score)
 
+    ; Reset carry flag
+    or a
+
     sbc hl,de
 
     ; If high score is greater than current score, do not replace high score
