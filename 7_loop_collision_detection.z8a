@@ -137,38 +137,15 @@ second_turn_higher:
 
 collision:
 
-    ; Check whether current score is the high score
+    ; Check if high score needs to be updated
 
-    ld de,score + 1
-    ld hl,hi_score + 1
+    ld hl,(score)
+    ld de,(hi_score)
 
-    ld a,(de)
-    sub (hl)
+    sbc hl,de
 
-    ; If MSB of hi_score is greater than MSB of score, hi_score does not need
-    ; to be updated
+    ; If high score is greater than current score, do not replace high score
     jp c,menu_start
-
-    dec de
-    dec hl
-
-    ; If MSB of hi_score is less than MSB of score, hi_score does need to be
-    ; updated
-    jr nz,update_high_score
-
-; Otherwise, check LSB
-
-    ld a,(de)
-    sub (hl)
-
-    ; If LSB of hi_score is greater than LSB of score, hi_score does not need
-    ; to be updated
-    jp c,menu_start
-
-; Otherwise, if LSB of hi_score is equal or less than that of score, then
-; update hi_score
-
-update_high_score:
 
     ld hl,(score)
     ld (hi_score),hl
