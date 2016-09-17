@@ -170,18 +170,10 @@ collision:
 
 update_high_score:
 
-    ; Replace hi_score with score
+    ld hl,(score)
+    ld (hi_score),hl
 
-    ld a,(de)
-    ld (hl),a
-
-    inc de
-    inc hl
-
-    ld a,(de)
-    ld (hl),a
-
-    ; hl = hi_score + 1
+    ld hl,hi_score + 1
     ld de,str_hi_score
     call gen_score_str
 
