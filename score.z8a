@@ -6,6 +6,9 @@ gen_score_str:
 ; string. The first 4 bytes of the string will be set to the score, converted
 ; to ASCII and with a fixed length of 4.
 
+; hl register pair must be set to the address of the 2nd byte of the score,
+; where the score is stored as a little endian BCD word.
+
     ld b,0x30
 
     ld a,(hl)

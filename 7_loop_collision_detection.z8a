@@ -71,7 +71,7 @@ check_border_collision_horizontal:
 
     ld d,a
 
-    jp c,menu_start
+    jp c,collision
     jp collision_detection_next_snake_section
 
 check_border_collision_vertical:
@@ -80,7 +80,7 @@ check_border_collision_vertical:
 
     xor c
     and 0xf0
-    jp nz,menu_start
+    jp nz,collision
 
 collision_detection_next_snake_section:
 
@@ -135,7 +135,56 @@ second_turn_higher:
     ; If carry, Ay > B2y
     jr c,no_collision
 
-    ; Collision
+collision:
+
+    ; Check whether current score is the high score
+
+    ld de,score + 1
+    ld hl,hi_score + 1
+
+    ld a,(de)
+    sub (hl)
+
+    ; If MSB of hi_score is greater than MSB of score, hi_score does not need
+    ; to be updated
+    jp c,menu_start
+
+    dec de
+    dec hl
+
+    ; If MSB of hi_score is less than MSB of score, hi_score does need to be
+    ; updated
+    jr nz,update_high_score
+
+; Otherwise, check LSB
+
+    ld a,(de)
+    sub (hl)
+
+    ; If LSB of hi_score is greater than LSB of score, hi_score does not need
+    ; to be updated
+    jp c,menu_start
+
+; Otherwise, if LSB of hi_score is equal or less than that of score, then
+; update hi_score
+
+update_high_score:
+
+    ; Replace hi_score with score
+
+    ld a,(de)
+    ld (hl),a
+
+    inc de
+    inc hl
+
+    ld a,(de)
+    ld (hl),a
+
+    ; hl = hi_score + 1
+    ld de,str_hi_score
+    call gen_score_str
+
     jp menu_start
 
 no_collision:
@@ -143,3 +192,4 @@ no_collision:
     ld d,(hl)
 
     djnz collision_detection_next_snake_section
+
