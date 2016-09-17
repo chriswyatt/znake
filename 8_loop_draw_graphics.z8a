@@ -27,16 +27,15 @@ update_graphics_init:
     ; new head, existing head (c = 3)
 
     ld a,(flags)
-    ld c,0x01
-    and c
-    xor c
+    cpl
+    and 0x01
     rlca
     add a,3
     ld c,a
 
-    halt
-
     ld iy,draw_line
+
+    halt
 
 update_graphics_next:
 
@@ -45,19 +44,21 @@ update_graphics_next:
 
     pop hl
 
-    ; Load x-coordinate into register b
+    ld b,0x0f
+
+    ; Load x-coordinate into register d
     ld a,h
     rrca
     rrca
     rrca
     rrca
-    and 0x0f
+    and b
     add a,8
     ld d,a
 
-    ; Load y-coordinate into register c
+    ; Load y-coordinate into register e
     ld a,h
-    and 0x0f
+    and b
     add a,4
     ld e,a
 
