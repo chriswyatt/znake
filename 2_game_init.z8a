@@ -28,31 +28,29 @@ init:
 
     ld iy,draw_line
 
-draw_top_border:
+; Push col/row and memory locations of graphics to stack, ready to draw later
 
-    ld c,16
+push_top_border:
 
-    ; Location of border top
-    ld hl,0x8180
+    ld b,16
 
     ; Column/row
     ld de,0x0803
 
-draw_top_border_next:
+    ; Location of border top
+    ld hl,0x8180
 
-    push de
+push_top_border_next:
+
     push hl
-    call draw_char
-    pop hl
-    pop de
+    push de
 
     inc d
-    dec c
-    jr nz,draw_top_border_next
+    djnz push_top_border_next
 
-draw_right_border:
+push_right_border:
 
-    ld c,16
+    ld b,16
 
     ; Location of border right
     ld hl,0x8188
@@ -60,21 +58,17 @@ draw_right_border:
     ; Column/row
     ld de,0x1804
 
-draw_right_border_next:
+push_right_border_next:
 
-    push de
     push hl
-    call draw_char
-    pop hl
-    pop de
+    push de
 
     inc e
-    dec c
-    jr nz,draw_right_border_next
+    djnz push_right_border_next
 
-draw_bottom_border:
+push_bottom_border:
 
-    ld c,16
+    ld b,16
 
     ; Location of border top
     ld hl,0x8190
@@ -82,21 +76,17 @@ draw_bottom_border:
     ; Column/row
     ld de,0x0814
 
-draw_bottom_border_next:
+push_bottom_border_next:
 
-    push de
     push hl
-    call draw_char
-    pop hl
-    pop de
+    push de
 
     inc d
-    dec c
-    jr nz,draw_bottom_border_next
+    djnz push_bottom_border_next
 
-draw_left_border:
+push_left_border:
 
-    ld c,16
+    ld b,16
 
     ; Location of border right
     ld hl,0x8198
@@ -104,17 +94,13 @@ draw_left_border:
     ; Column/row
     ld de,0x0704
 
-draw_left_border_next:
+push_left_border_next:
 
-    push de
     push hl
-    call draw_char
-    pop hl
-    pop de
+    push de
 
     inc e
-    dec c
-    jr nz,draw_left_border_next
+    djnz push_left_border_next
 
     ; Location of border top-right
     ld hl,0x81a0
@@ -122,7 +108,8 @@ draw_left_border_next:
     ; Column/row
     ld de,0x1803
 
-    call draw_char
+    push hl
+    push de
 
     ; Location of border bottom-right
     ld hl,0x81a8
@@ -130,7 +117,8 @@ draw_left_border_next:
     ; Column/row
     ld de,0x1814
 
-    call draw_char
+    push hl
+    push de
 
     ; Location of border bottom-left
     ld hl,0x81b0
@@ -138,7 +126,8 @@ draw_left_border_next:
     ; Column/row
     ld de,0x0714
 
-    call draw_char
+    push hl
+    push de
 
     ; Location of border top-left
     ld hl,0x81b8
@@ -146,7 +135,21 @@ draw_left_border_next:
     ; Column/row
     ld de,0x0703
 
+    push hl
+    push de
+
+    ld c,68
+
+    halt
+
+draw_border_char:
+
+    pop de
+    pop hl
     call draw_char
+
+    dec c
+    jr nz,draw_border_char
 
     ; Initialise snake
 
