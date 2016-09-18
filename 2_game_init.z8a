@@ -28,9 +28,10 @@ init:
 
     ld iy,draw_line
 
-; Push col/row and memory locations of graphics to stack, ready to draw later
+    ; Push col/row and memory locations of graphics to stack, ready to draw
+    ; later
 
-push_top_border:
+; Push top border
 
     ld b,16
 
@@ -48,7 +49,7 @@ push_top_border_next:
     inc d
     djnz push_top_border_next
 
-push_right_border:
+; Push right border
 
     ld b,16
 
@@ -66,7 +67,7 @@ push_right_border_next:
     inc e
     djnz push_right_border_next
 
-push_bottom_border:
+; Push bottom border
 
     ld b,16
 
@@ -84,7 +85,7 @@ push_bottom_border_next:
     inc d
     djnz push_bottom_border_next
 
-push_left_border:
+; Push left border
 
     ld b,16
 
@@ -101,6 +102,8 @@ push_left_border_next:
 
     inc e
     djnz push_left_border_next
+
+; Push border corners
 
     ; Location of border top-right
     ld hl,0x81a0
@@ -138,7 +141,7 @@ push_left_border_next:
     push hl
     push de
 
-    ld c,68
+    ld c,16 + 16 + 16 + 16 + 4
 
     halt
 
