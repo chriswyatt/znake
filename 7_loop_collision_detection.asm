@@ -3,7 +3,7 @@
 ; Znake (ZX Spectrum 48K)
 
 ; -----------------------------------------------------------------------------
-; 7_loop_collision_detection.z8a
+; 7_loop_collision_detection.asm
 ; -----------------------------------------------------------------------------
 
 ; Copyright (C) 2016, Chris Wyatt

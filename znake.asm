@@ -3,7 +3,7 @@
 ; Znake (ZX Spectrum 48K)
 
 ; -----------------------------------------------------------------------------
-; main.z8a
+; main.asm
 ; -----------------------------------------------------------------------------
 
 ; Copyright (C) 2016, Chris Wyatt
@@ -14,48 +14,48 @@
 
 ; /////////////////////////////////////////////////////////////////////////////
 
-include const.z8a
+include const.asm
 
 org 0x8000
 
-include vars.z8a
+include vars.asm
 
 org 0x8080
 
-include im2_routine.z8a
+include im2_routine.asm
 
 org 0x8100
 
-include graphics.z8a
+include graphics.asm
 
-include utils.z8a
+include utils.asm
 
-include draw.z8a
+include draw.asm
 
-include find_free_space.z8a
+include find_free_space.asm
 
-include input.z8a
+include input.asm
 
-include score.z8a
+include score.asm
 
 start:
 
-include 0_init.z8a
+include 0_init.asm
 
-include 1_menu.z8a
+include 1_menu.asm
 
-include 2_game_init.z8a
+include 2_game_init.asm
 
-include 3_loop_create_food.z8a
+include 3_loop_create_food.asm
 
-include 4_loop_input.z8a
+include 4_loop_input.asm
 
-include 5_loop_move_head.z8a
+include 5_loop_move_head.asm
 
-include 6_loop_move_tail.z8a
+include 6_loop_move_tail.asm
 
-include 7_loop_collision_detection.z8a
+include 7_loop_collision_detection.asm
 
-include 8_loop_draw_graphics.z8a
+include 8_loop_draw_graphics.asm
 
 end start

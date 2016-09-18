@@ -18,7 +18,7 @@ The game will 'just work' on the ZX Vega; a keymap is not required.
 
 ## Assemble
 Znake was assembled using Pasmo:
-`pasmo --name znake --tapbas znake.z8a znake.tap`
+`pasmo --name znake --tapbas znake.asm znake.tap`
 
 ## License
 See LICENSE
