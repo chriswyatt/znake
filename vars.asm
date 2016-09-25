@@ -17,31 +17,39 @@
 menu_last_direction: db 0x00
 menu_last_direction_frame_count: db 0x00
 
-str_easy: db " Easy\0"
-
+str_easier: db "Boring\0"
+str_easy:   db " Easy \0"
 str_medium: db "Normal\0"
-
-str_hard: db " Hard\0"
+str_hard:   db " Hard \0"
+str_harder: db "Insane\0"
 
 str_score_lbl: db "Sc:\0"
 str_hi_score_lbl: db "Hi:\0"
 
-difficulty: db 0x01
+difficulty: db 0x02
 
 ; string, display location, snake speed
 difficulties:
 
+    dw str_easier
+    dw 0x0c07
+    db 32
+
     dw str_easy
     dw 0x0c09
-    db 12
+    db 16
 
     dw str_medium
     dw 0x0c0b
-    db 9
+    db 8
 
     dw str_hard
     dw 0x0c0d
-    db 6
+    db 4
+
+    dw str_harder
+    dw 0x0c0f
+    db 2
 
 ; Starting offset for snake history
 snake_history_tail_offset: db 0x00

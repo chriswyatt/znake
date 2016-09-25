@@ -94,6 +94,18 @@ menu_start:
     ld e,(ix + 12)
     call print
 
+    ld h,(ix + 16)
+    ld l,(ix + 15)
+    ld d,(ix + 18)
+    ld e,(ix + 17)
+    call print
+
+    ld h,(ix + 21)
+    ld l,(ix + 20)
+    ld d,(ix + 23)
+    ld e,(ix + 22)
+    call print
+
     ld a,(difficulty)
     inc a
     ld b,a
@@ -163,7 +175,7 @@ menu_kempston_joy_up:
     dec a
     jp p,unselect_current_difficulty
 
-    ld a,2
+    ld a,4
 
     jp unselect_current_difficulty
 
@@ -171,7 +183,7 @@ menu_kempston_joy_down:
 
     ld a,(hl)
     inc a
-    cp 3
+    cp 5
     jr nz,unselect_current_difficulty
 
     xor a
