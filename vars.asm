@@ -33,19 +33,19 @@ difficulties:
 
     dw str_easier
     dw 0x0c07
-    db 32
+    db 24
 
     dw str_easy
     dw 0x0c09
-    db 16
+    db 12
 
     dw str_medium
     dw 0x0c0b
-    db 8
+    db 6
 
     dw str_hard
     dw 0x0c0d
-    db 4
+    db 3
 
     dw str_harder
     dw 0x0c0f
