@@ -63,7 +63,7 @@ next_snake_section:
     cp b
     jr c,check_no_overlap_pos
 
-macro check_no_overlap, pos
+macro check_no_overlap, lo_reg, hi_reg
 
     ; Tail/turn 2 (B2) already in register a
 
@@ -78,11 +78,7 @@ macro check_no_overlap, pos
     ; Check half carry
     and c ; 0xf0
     add a,d
-    if pos
-        xor b
-    else
-        xor (hl)
-    endif
+    xor hi_reg
     and c ; 0xf0
     jr nz,no_overlap
 
@@ -90,11 +86,7 @@ macro check_no_overlap, pos
     ld a,e
 
     ; Minus tail/turn 1 (B1)
-    if pos
-        sub (hl)
-    else
-        sub b
-    endif
+    sub lo_reg
 
     ; If carry, B1x > A2x or B1y > A2y
     ; (B1y > A2y only detected in certain edge cases, which is why we check
@@ -103,18 +95,14 @@ macro check_no_overlap, pos
 
     ; Check half carry
     and c ; 0xf0
-    if pos
-        add a,(hl)
-    else
-        add a,b
-    endif
+    add a,lo_reg
     xor e
     and c ; 0xf0
     jr nz,no_overlap
 
 endm
 
-check_no_overlap 0 ; neg
+check_no_overlap b, (hl) ; lo, hi
 
 jp overlap
 
@@ -123,7 +111,7 @@ check_no_overlap_pos:
 ; Tail/turn 2 (B2)
 ld a,b
 
-check_no_overlap 1 ; pos
+check_no_overlap (hl), b ; lo, hi
 
 overlap:
 
