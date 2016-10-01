@@ -62,33 +62,34 @@ draw_char:
 
     jp (iy)
 
-draw_line:
+macro _draw_line, xor_, djnz_addr
 
-; Draw a character line by line
-
-    ld a,(hl)
+    if xor_
+        ld a,(de)
+        xor (hl)
+    else
+        ld a,(hl)
+    endif
     ld (de),a
     inc l
 
     ; The high byte is incremented to get the destination of the next line
     inc d
 
-    djnz draw_line
+    djnz djnz_addr
 
     ret
+
+endm
+
+draw_line:
+
+; Draw a character line by line
+
+    _draw_line 0, draw_line
 
 draw_line_xor:
 
 ; Draw a character line by line and xor with existing line
 
-    ld a,(de)
-    xor (hl)
-    ld (de),a
-    inc l
-
-    ; The high byte is incremented to get the destination of the next line
-    inc d
-
-    djnz draw_line_xor
-
-    ret
+    _draw_line 1, draw_line_xor
