@@ -63,9 +63,7 @@ next_snake_section:
     cp b
     jr c,check_no_overlap_pos
 
-    ; TODO: Investigate turning pos and neg routines into a single macro
-
-; Check no overlap (neg)
+macro check_no_overlap, pos
 
     ; Tail/turn 2 (B2) already in register a
 
@@ -80,7 +78,11 @@ next_snake_section:
     ; Check half carry
     and c ; 0xf0
     add a,d
-    xor (hl)
+    if pos
+        xor b
+    else
+        xor (hl)
+    endif
     and c ; 0xf0
     jr nz,no_overlap
 
@@ -88,7 +90,11 @@ next_snake_section:
     ld a,e
 
     ; Minus tail/turn 1 (B1)
-    sub b
+    if pos
+        sub (hl)
+    else
+        sub b
+    endif
 
     ; If carry, B1x > A2x or B1y > A2y
     ; (B1y > A2y only detected in certain edge cases, which is why we check
@@ -97,50 +103,27 @@ next_snake_section:
 
     ; Check half carry
     and c ; 0xf0
-    add a,b
+    if pos
+        add a,(hl)
+    else
+        add a,b
+    endif
     xor e
     and c ; 0xf0
     jr nz,no_overlap
 
-    jp overlap
+endm
+
+check_no_overlap 0 ; neg
+
+jp overlap
 
 check_no_overlap_pos:
 
-    ; Tail/turn 2 (B2)
-    ld a,b
+; Tail/turn 2 (B2)
+ld a,b
 
-    ; Minus top-left of square (A1)
-    sub d
-
-    ; If carry, A1x > B2x or A1y > B2y
-    ; (A1y > B2y only detected in certain edge cases, which is why we check
-    ;  if the Y nibble carries in the next check)
-    jr c,no_overlap
-
-    ; Check half carry
-    and c ; 0xf0
-    add a,d
-    xor b
-    and c ; 0xf0
-    jr nz,no_overlap
-
-    ; Bottom-right of square (A2)
-    ld a,e
-
-    ; Minus tail/turn 1 (B1)
-    sub (hl)
-
-    ; If carry, B1x > A2x or B1y > A2y
-    ; (B1y > A2y only detected in certain edge cases, which is why we check
-    ;  if the Y nibble carries in the next check)
-    jr c,no_overlap
-
-    ; Check half carry
-    and c ; 0xf0
-    add a,(hl)
-    xor e
-    and c ; 0xf0
-    jr nz,no_overlap
+check_no_overlap 1 ; pos
 
 overlap:
 
