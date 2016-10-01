@@ -26,25 +26,22 @@ check_input:
 read_kempston_d:
 
     in a,(0x1f)
+    and 0x0f
 
     ; up-right (bits 0 and 3)
-    ld b,0x09
-    cp b
+    cp 0x09
     jr z,kempston_joy_up_right
 
     ; down-right (bits 0 and 2)
-    ld b,0x05
-    cp b
+    cp 0x05
     jr z,kempston_joy_down_right
 
     ; down-left (bits 1 and 2)
-    ld b,0x06
-    cp b
+    cp 0x06
     jr z,kempston_joy_down_left
 
     ; up-left (bits 1 and 3)
-    ld b,0x0a
-    cp b
+    cp 0x0a
     jr z,kempston_joy_up_left
 
     ; Horizontal/vertical logic relies on last queued direction(s)
