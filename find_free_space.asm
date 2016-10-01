@@ -102,16 +102,18 @@ macro check_no_overlap, lo_reg, hi_reg
 
 endm
 
-check_no_overlap b, (hl) ; lo, hi
+; Check no overlap (neg)
 
-jp overlap
+    check_no_overlap b, (hl) ; lo, hi
+
+    jp overlap
 
 check_no_overlap_pos:
 
-; Tail/turn 2 (B2)
-ld a,b
+    ; Tail/turn 2 (B2)
+    ld a,b
 
-check_no_overlap (hl), b ; lo, hi
+    check_no_overlap (hl), b ; lo, hi
 
 overlap:
 
