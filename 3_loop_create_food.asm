@@ -201,6 +201,10 @@ check_create_food:
 
     ; Create food
 
+    ; If a quadrant does not contain free squares, it is skipped. The counter
+    ; will be decremented for each quadrant checked.
+    ld b,5
+
     ; Pick a random quadrant
 
     call random
@@ -214,6 +218,11 @@ check_create_food:
 
 create_food_br:
 
+    djnz create_food_br_continue
+    jp collision
+
+create_food_br_continue:
+
     ld a,(free_squares_br_length)
     or a
     jr z,create_food_tr
@@ -226,6 +235,11 @@ create_food_left:
 
 create_food_bl:
 
+    djnz create_food_bl_continue
+    jp collision
+
+create_food_bl_continue:
+
     ld a,(free_squares_bl_length)
     or a
     jr z,create_food_br
@@ -234,6 +248,11 @@ create_food_bl:
 
 create_food_tr:
 
+    djnz create_food_tr_continue
+    jp collision
+
+create_food_tr_continue:
+
     ld a,(free_squares_tr_length)
     or a
     jr z,create_food_tl
@@ -241,6 +260,11 @@ create_food_tr:
     jp create_food
 
 create_food_tl:
+
+    djnz create_food_tl_continue
+    jp collision
+
+create_food_tl_continue:
 
     ld a,(free_squares_tl_length)
     or a
