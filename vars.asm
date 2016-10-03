@@ -33,7 +33,7 @@ difficulties:
 
     dw str_easier
     dw 0x0c07
-    db 24
+    db 36
 
     dw str_easy
     dw 0x0c09
@@ -45,11 +45,11 @@ difficulties:
 
     dw str_hard
     dw 0x0c0d
-    db 3
+    db 4
 
     dw str_harder
     dw 0x0c0f
-    db 2
+    db 3
 
 ; Starting offset for snake history
 snake_history_tail_offset: db 0x00
