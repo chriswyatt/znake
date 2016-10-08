@@ -25,8 +25,20 @@ check_input:
 ; Check for diagonal input from Kempston joystick port
 read_kempston_d:
 
+    ld a,(last_input)
+    ld b,a
+
     in a,(0x1f)
     and 0x0f
+    ld c,a
+
+    ld (last_input),a
+
+    ; Filter out bits that have not changed from the last input
+    xor b
+    and c
+
+    jp po,read_kempston_hv
 
     ; up-right (bits 0 and 3)
     cp 0x09
@@ -44,6 +56,8 @@ read_kempston_d:
     cp 0x0a
     jr z,kempston_joy_up_left
 
+read_kempston_hv:
+
     ; Horizontal/vertical logic relies on last queued direction(s)
 
     ; Get last direction(s)
@@ -52,105 +66,75 @@ read_kempston_d:
     jr z,direction_not_queued
 
     ; Otherwise, direction queued
-    ld b,a
-    jp read_kempston_hv
+    ld c,a
+    jp direction_queued
 
 direction_not_queued:
 
-    ld b,d
+    ld c,d
 
 ; Check for horizontal/vertical input from Kempston joystick port
-read_kempston_hv:
+direction_queued:
 
     in a,(0x1f)
 
-    bit 3,a ; up
-    jr nz,kempston_joy_up
-    bit 0,a ; right
-    jr nz,kempston_joy_right
-    bit 2,a ; down
-    jr nz,kempston_joy_down
-    bit 1,a ; left
-    jr nz,kempston_joy_left
+    cp 0x08 ; up
+    jr z,kempston_joy_up
 
-    ; If no bits are on, make sure that only one direction is queued;
-    ; otherwise the snake may veer off in an unintended direction
+    cp 0x04 ; down
+    jr z,kempston_joy_down
 
-    ld a,e
-    or a
+    cp 0x02 ; left
+    jr z,kempston_joy_left
 
-    ; If queue contains 1 direction, jump to next input loop
-    ret po
+    cp 0x01 ; right
+    jr z,kempston_joy_right
 
-    ; If queue is empty, jump to next input loop
-    ret z
+    ; Restore last input
+    ld a,b
+    ld (last_input),a
 
-    ; Otherwise only keep the highest priority direction
-    ld a,e
-    and 0x0f
-    ld e,a
-
-    jp save_direction_queue
-
-; The following bitmasks could also allow the opposite directions too, e.g.
-; if the bitmask is left, it could also accept right. This would make the
-; controls more sensitive at the expense of accidentally turning the snake
-; in an unintentional direction. This also helps with the ZX Vega D-pad's
-; tendency to lean in a diagonal direction, when the user intended a
-; horizontal/vertical direction. We could consider allowing this to be user
-; configurable.
+    ret
 
 kempston_joy_up_right:
 
-    ; If current direction is left
-    bit 1,d
+    ; If current direction is left/right
+    ld a,d
+    and 0x03
     jr nz,queue_up_right
 
-    ; If current direction is down
-    bit 2,d
-    jr nz,queue_right_up
-
-    ; Else ignore
-    ret
+    ; Else, current direction is up/down
+    jp queue_right_up
 
 kempston_joy_down_right:
 
-    ; If current direction is left
-    bit 1,d
+    ; If current direction is left/right
+    ld a,d
+    and 0x03
     jr nz,queue_down_right
 
-    ; If current direction is up
-    bit 3,d
-    jr nz,queue_right_down
-
-    ; Else ignore
-    ret
+    ; Else, current direction is up/down
+    jp queue_right_down
 
 kempston_joy_down_left:
 
-    ; If current direction is right
-    bit 0,d
+    ; If current direction is left/right
+    ld a,d
+    and 0x03
     jr nz,queue_down_left
 
-    ; If current direction is up
-    bit 3,d
-    jr nz,queue_left_down
-
-    ; Else ignore
-    ret
+    ; Else, current direction is up/down
+    jp queue_left_down
 
 kempston_joy_up_left:
 
-    ; If current direction is right
-    bit 0,d
+    ; If current direction is left/right
+    ld a,d
+    and 0x03
     jr nz,queue_up_left
 
-    ; If current direction is down
-    bit 2,d
-    jr nz,queue_left_up
-
-    ; Else ignore
-    ret
+    ; Else, current direction is up/down
+    jp queue_left_up
 
 queue_up_right:
 
@@ -230,7 +214,7 @@ kempston_joy_left:
 kempston_joy_hv:
 
     ; Load last requested direction into accumulator
-    ld a,b
+    ld a,c
 
     ; If 0 or 1 last requested directions, jump
 

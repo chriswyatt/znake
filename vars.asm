@@ -79,6 +79,9 @@ snake_direction_current: db 0x00
 ; (low bits have higher priority)
 snake_direction_queue: db 0x00
 
+; The last processed Kempston input
+last_input: db 0x00
+
 ; The current location of the snake's food
 current_food_location: db 0x00
 
