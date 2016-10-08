@@ -157,6 +157,7 @@ draw_border_char:
     ; Initialise snake
 
     xor a ; a = 0x00
+    ld (last_input),a
     ld (snake_direction_queue),a
     ld (snake_history_tail_offset),a
 
