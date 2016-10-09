@@ -28,28 +28,33 @@ str_hi_score_lbl: db "Hi:\0"
 
 difficulty: db 0x02
 
-; string, display location, snake speed
+; string, display location, snake speed, high score
 difficulties:
 
     dw str_easier
     dw 0x0c07
     db 36
+    dw 0x0000
 
     dw str_easy
     dw 0x0c09
     db 12
+    dw 0x0000
 
     dw str_medium
     dw 0x0c0b
     db 6
+    dw 0x0000
 
     dw str_hard
     dw 0x0c0d
     db 4
+    dw 0x0000
 
     dw str_harder
     dw 0x0c0f
     db 3
+    dw 0x0000
 
 ; Starting offset for snake history
 snake_history_tail_offset: db 0x00

@@ -82,36 +82,36 @@ menu_start:
     ld e,(ix + 2)
     call print
 
-    ld h,(ix + 6)
-    ld l,(ix + 5)
-    ld d,(ix + 8)
-    ld e,(ix + 7)
+    ld h,(ix + DIFFICULTIES_ROW_LENGTH + 1)
+    ld l,(ix + DIFFICULTIES_ROW_LENGTH)
+    ld d,(ix + DIFFICULTIES_ROW_LENGTH + 3)
+    ld e,(ix + DIFFICULTIES_ROW_LENGTH + 2)
     call print
 
-    ld h,(ix + 11)
-    ld l,(ix + 10)
-    ld d,(ix + 13)
-    ld e,(ix + 12)
+    ld h,(ix + DIFFICULTIES_ROW_LENGTH * 2 + 1)
+    ld l,(ix + DIFFICULTIES_ROW_LENGTH * 2)
+    ld d,(ix + DIFFICULTIES_ROW_LENGTH * 2 + 3)
+    ld e,(ix + DIFFICULTIES_ROW_LENGTH * 2 + 2)
     call print
 
-    ld h,(ix + 16)
-    ld l,(ix + 15)
-    ld d,(ix + 18)
-    ld e,(ix + 17)
+    ld h,(ix + DIFFICULTIES_ROW_LENGTH * 3 + 1)
+    ld l,(ix + DIFFICULTIES_ROW_LENGTH * 3)
+    ld d,(ix + DIFFICULTIES_ROW_LENGTH * 3 + 3)
+    ld e,(ix + DIFFICULTIES_ROW_LENGTH * 3 + 2)
     call print
 
-    ld h,(ix + 21)
-    ld l,(ix + 20)
-    ld d,(ix + 23)
-    ld e,(ix + 22)
+    ld h,(ix + DIFFICULTIES_ROW_LENGTH * 4 + 1)
+    ld l,(ix + DIFFICULTIES_ROW_LENGTH * 4)
+    ld d,(ix + DIFFICULTIES_ROW_LENGTH * 4 + 3)
+    ld e,(ix + DIFFICULTIES_ROW_LENGTH * 4 + 2)
     call print
 
     ld a,(difficulty)
     inc a
     ld b,a
 
-    ld de,5
-    ld ix,difficulties - 3
+    ld de,DIFFICULTIES_ROW_LENGTH
+    ld ix,difficulties - 5
 
 select_difficulty_offset_increment:
 

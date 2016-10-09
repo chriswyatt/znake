@@ -356,7 +356,7 @@ check_food_eaten:
     daa
     ld (hl),a
 
-    dec hl ; hl = hi_score
+    dec hl ; hl = score
     ld de,str_score
     call gen_score_str
 
