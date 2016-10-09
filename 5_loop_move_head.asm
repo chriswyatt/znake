@@ -51,7 +51,7 @@ macro move_head_hv, direction
         jr nz,head_turning_right_up
     endif
 
-    ; Low bit of graphics
+    ; Low bit of neck graphics
     if direction = 0x08 || direction = 0x04
         ld c,0x28
     endif
@@ -86,7 +86,7 @@ macro move_head_hv, direction
         ld b,a
     endif
 
-    ; Low bit of graphics
+    ; Low bit of head graphics
     if direction = 0x08
         ld c,0x08
     endif
@@ -105,6 +105,100 @@ macro move_head_hv, direction
 
     ; Update the existing head location in our table
     ld (hl),b
+
+endm
+
+macro turn_head, prev_direction, new_direction
+
+    ; Low bit of neck graphics
+    if prev_direction = 0x08
+        if new_direction = 0x02
+            ld c,0x50
+        endif
+        if new_direction = 0x01
+            ld c,0x38
+        endif
+    endif
+    if prev_direction = 0x04
+        if new_direction = 0x02
+            ld c,0x48
+        endif
+        if new_direction = 0x01
+            ld c,0x40
+        endif
+
+    endif
+    if prev_direction = 0x02
+        if new_direction = 0x08
+            ld c,0x40
+        endif
+        if new_direction = 0x04
+            ld c,0x38
+        endif
+
+    endif
+    if prev_direction = 0x01
+        if new_direction = 0x08
+            ld c,0x48
+        endif
+        if new_direction = 0x04
+            ld c,0x50
+        endif
+    endif
+
+    ; Draw later
+    push bc
+
+    ; Move head
+    if prev_direction = 0x08 || prev_direction = 0x04
+        ld a,b
+        if new_direction = 0x02
+            sub 0x10
+        endif
+        if new_direction = 0x01
+            add a,0x10
+        endif
+        ld b,a
+    endif
+    if prev_direction = 0x02 || prev_direction = 0x01
+        if new_direction = 0x08
+            dec b
+        endif
+        if new_direction = 0x04
+            inc b
+        endif
+    endif
+
+    ; Low bit of head graphics
+    if prev_direction = 0x08 || prev_direction = 0x04
+        if new_direction = 0x02
+            ld c,0x20
+        endif
+        if new_direction = 0x01
+            ld c,0x10
+        endif
+    endif
+    if prev_direction = 0x02 || prev_direction = 0x01
+        if new_direction = 0x08
+            ld c,0x08
+        endif
+        if new_direction = 0x04
+            ld c,0x18
+        endif
+    endif
+
+    ; Draw later
+    push bc
+
+    ; Move pointer to new head location
+    inc l
+
+    ; Add new head location to our table
+    ld (hl),b
+
+    ld a,(snake_history_head_offset)
+    inc a
+    ld (snake_history_head_offset),a
 
 endm
 
@@ -155,60 +249,13 @@ update_head_history:
 
 head_turning_left_down:
 
-    ; Low bit of graphics
-    ld c,0x38
-
-    ; Draw later
-    push bc
-
-    ; Get head location again and shift it down
-    inc b
-
-    ; Low bit of graphics
-    ld c,0x18
-
-    ; Draw later
-    push bc
-
-    ; Move pointer to new head location
-    inc l
-
-    ; Add new head location to our table
-    ld (hl),b
-
-    ld a,(snake_history_head_offset)
-    inc a
-    ld (snake_history_head_offset),a
+    turn_head 0x02, 0x04
 
     jp check_food_eaten
 
 head_turning_left_up:
 
-    ; Low bit of graphics
-    ld c,0x40
-
-    ; Draw later
-    push bc
-
-    ; Get head location again and shift it up
-    dec b
-
-    ; Low bit of graphics
-    ld c,0x08
-
-    ; Draw later
-    push bc
-
-    ; Move pointer to new head location
-    inc l
-
-    ; Set new head location up 1 from previous head
-    ld (hl),b
-
-    ; Because the snake has turned:
-    ld a,(snake_history_head_offset)
-    inc a
-    ld (snake_history_head_offset),a
+    turn_head 0x02, 0x08
 
     jp check_food_eaten
 
@@ -220,60 +267,13 @@ head_moving_right:
 
 head_turning_right_down:
 
-    ; Low bit of graphics
-    ld c,0x50
-
-    ; Draw later
-    push bc
-
-    ; Get head location again and shift it down
-    inc b
-
-    ; Low bit of graphics
-    ld c,0x18
-
-    ; Draw later
-    push bc
-
-    ; Move pointer to new head location
-    inc l
-
-    ; Add new head location to our table
-    ld (hl),b
-
-    ; Because the snake has turned:
-    ld a,(snake_history_head_offset)
-    inc a
-    ld (snake_history_head_offset),a
+    turn_head 0x01, 0x04
 
     jp check_food_eaten
 
 head_turning_right_up:
 
-    ; Low bit of graphics
-    ld c,0x48
-
-    ; Draw later
-    push bc
-
-    ; Get head location again and shift it up
-    dec b
-
-    ; Low bit of graphics
-    ld c,0x08
-
-    ; Draw later
-    push bc
-
-    ; Move pointer to new head location
-    inc l
-
-    ; Add new head location to our table
-    ld (hl),b
-
-    ld a,(snake_history_head_offset)
-    inc a
-    ld (snake_history_head_offset),a
+    turn_head 0x01, 0x08
 
     jp check_food_eaten
 
@@ -297,67 +297,13 @@ head_moving_vertically:
 
 head_turning_up_right:
 
-    ; Low bit of graphics
-    ld c,0x38
-
-    ; Draw later
-    push bc
-
-    ; Get head location again and shift it right
-    ld a,b
-    add a,0x10
-
-    ; Push new head location back to b register
-    ld b,a
-
-    ; Low bit of graphics
-    ld c,0x10
-
-    ; Draw later
-    push bc
-
-    ; Move pointer to new head location
-    inc l
-
-    ; Add new head location to our table
-    ld (hl),a
-
-    ld a,(snake_history_head_offset)
-    inc a
-    ld (snake_history_head_offset),a
+    turn_head 0x08, 0x01
 
     jp check_food_eaten
 
 head_turning_up_left:
 
-    ; Low bit of graphics
-    ld c,0x50
-
-    ; Draw later
-    push bc
-
-    ; Get head location again and shift it left
-    ld a,b
-    sub 0x10
-
-    ; Push new head location back to b register
-    ld b,a
-
-    ; Low bit of graphics
-    ld c,0x20
-
-    ; Draw later
-    push bc
-
-    ; Move pointer to new head location
-    inc l
-
-    ; Add new head location to our table
-    ld (hl),a
-
-    ld a,(snake_history_head_offset)
-    inc a
-    ld (snake_history_head_offset),a
+    turn_head 0x08, 0x02
 
     jp check_food_eaten
 
@@ -369,67 +315,13 @@ head_moving_down:
 
 head_turning_down_right:
 
-    ; Low bit of graphics
-    ld c,0x40
-
-    ; Draw later
-    push bc
-
-    ; Get head location again and shift it right
-    ld a,b
-    add a,0x10
-
-    ; Push new head location back to b register
-    ld b,a
-
-    ; Low bit of graphics
-    ld c,0x10
-
-    ; Draw later
-    push bc
-
-    ; Move pointer to new head location
-    inc l
-
-    ; Add new head location to our table
-    ld (hl),a
-
-    ld a,(snake_history_head_offset)
-    inc a
-    ld (snake_history_head_offset),a
+    turn_head 0x04, 0x01
 
     jp check_food_eaten
 
 head_turning_down_left:
 
-    ; Low bit of graphics
-    ld c,0x48
-
-    ; Draw later
-    push bc
-
-    ; Get head location again and shift it left
-    ld a,b
-    sub 0x10
-
-    ; Push new head location back to b register
-    ld b,a
-
-    ; Low bit of graphics
-    ld c,0x20
-
-    ; Draw later
-    push bc
-
-    ; Move pointer to new head location
-    inc l
-
-    ; Add new head location to our table
-    ld (hl),a
-
-    ld a,(snake_history_head_offset)
-    inc a
-    ld (snake_history_head_offset),a
+    turn_head 0x04, 0x02
 
 check_food_eaten:
 
