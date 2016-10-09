@@ -14,7 +14,7 @@
 
 ; /////////////////////////////////////////////////////////////////////////////
 
-macro move_head_vertical, head_turning_left_addr, head_turning_right_addr, direction, graphics_low_addr
+macro move_head_hv, direction
 
     ; Load head location to register b
     ld b,e
@@ -22,83 +22,89 @@ macro move_head_vertical, head_turning_left_addr, head_turning_right_addr, direc
     ; Depending on the current direction, the new head location may be placed
     ; to the right or to the left ...
 
-    bit 0,d
-    jr nz,head_turning_right_addr
+    if direction = 0x08
+        bit 0,d
+        jr nz,head_turning_up_right
 
-    bit 1,d
-    jr nz,head_turning_left_addr
+        bit 1,d
+        jr nz,head_turning_up_left
+    endif
+    if direction = 0x04
+        bit 0,d
+        jr nz,head_turning_down_right
+
+        bit 1,d
+        jr nz,head_turning_down_left
+    endif
+    if direction = 0x02
+        bit 2,d
+        jr nz,head_turning_left_down
+
+        bit 3,d
+        jr nz,head_turning_left_up
+    endif
+    if direction = 0x01
+        bit 2,d
+        jr nz,head_turning_right_down
+
+        bit 3,d
+        jr nz,head_turning_right_up
+    endif
 
     ; Low bit of graphics
-    ld c,0x28
+    if direction = 0x08 || direction = 0x04
+        ld c,0x28
+    endif
+    if direction = 0x02 || direction = 0x01
+        ld c,0x30
+    endif
 
     ; Draw later
     push bc
 
     ; ... otherwise the head is still moving vertically
 
-    ; Get head location again and shift it up
+    ; Get head location again and ...
     if direction = 0x08
+        ; shift it up
         dec b
     endif
     if direction = 0x04
+        ; shift it down
         inc b
+    endif
+    if direction = 0x02
+        ; shift it left
+        ld a,b
+        sub 0x10
+        ld b,a
+    endif
+    if direction = 0x01
+        ; shift it right
+        ld a,b
+        add a,0x10
+        ld b,a
     endif
 
     ; Low bit of graphics
-    ld c,graphics_low_addr
+    if direction = 0x08
+        ld c,0x08
+    endif
+    if direction = 0x04
+        ld c,0x18
+    endif
+    if direction = 0x02
+        ld c,0x20
+    endif
+    if direction = 0x01
+        ld c,0x10
+    endif
 
     ; Draw later
     push bc
 
     ; Update the existing head location in our table
     ld (hl),b
-
-endm
-
-macro move_head_horizontal, head_turning_up_addr, head_turning_down_addr, direction, graphics_low_addr
-
-    ; Load head location to register b
-    ld b,e
-
-    ; Depending on the current direction, the new head location may be placed
-    ; to the top or to the bottom ...
-
-    bit 2,d
-    jr nz,head_turning_down_addr
-
-    bit 3,d
-    jr nz,head_turning_up_addr
-
-    ; Low bit of graphics
-    ld c,0x30
-
-    ; Draw later
-    push bc
-
-    ; ... otherwise the head is still moving horizontally
-
-    ; Get head location and ...
-    ld a,b
-    if direction = 0x02
-        ; ... shift it left
-        sub 0x10
-    endif
-    if direction = 0x01
-        ; ... shift it right
-        add a,0x10
-    endif
-
-    ; Update the existing head location in our table
-    ld (hl),a
-
-    ; Push new head location back to b register
-    ld b,a
-
-    ; Low bit of graphics
-    ld c,graphics_low_addr
-
-    ; Draw later
-    push bc
 
 endm
 
@@ -143,7 +149,7 @@ update_head_history:
 
 ; Head moving left
 
-    move_head_horizontal head_turning_left_up, head_turning_left_down, 0x02, 0x20
+    move_head_hv 0x02
 
     jp check_food_eaten
 
@@ -208,7 +214,7 @@ head_turning_left_up:
 
 head_moving_right:
 
-    move_head_horizontal head_turning_right_up, head_turning_right_down, 0x01, 0x10
+    move_head_hv 0x01
 
     jp check_food_eaten
 
@@ -285,7 +291,7 @@ head_moving_vertically:
 
 ; Head moving up
 
-    move_head_vertical head_turning_up_left, head_turning_up_right, 0x08, 0x08
+    move_head_hv 0x08
 
     jp check_food_eaten
 
@@ -357,7 +363,7 @@ head_turning_up_left:
 
 head_moving_down:
 
-    move_head_vertical head_turning_down_left, head_turning_down_right, 0x04, 0x18
+    move_head_hv 0x04
 
     jp check_food_eaten
 
