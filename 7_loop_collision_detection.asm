@@ -139,8 +139,25 @@ collision:
 
     ; Check if high score needs to be updated
 
+    ; Set ix to address of high score column in difficulties table
+
+    ld de,DIFFICULTIES_ROW_LENGTH
+    ld ix,difficulties - DIFFICULTIES_ROW_LENGTH + 5
+    ld a,(difficulty)
+    inc a
+    ld b,a
+
+inc_difficulty_2:
+
+    add ix,de
+
+    djnz inc_difficulty_2
+
     ld hl,(score)
-    ld de,(hi_score)
+
+    ; Set de to high score value
+    ld d,(ix + 1)
+    ld e,(ix)
 
     ; Reset carry flag
     or a
@@ -150,10 +167,15 @@ collision:
     ; If high score is greater than current score, do not replace high score
     jp c,menu_start
 
+    ; Otherwise, replace high score column in difficulties table
     ld hl,(score)
-    ld (hi_score),hl
+    ld (ix + 1),h
+    ld (ix),l
 
-    ld hl,hi_score
+    ; Set hl to address of high score column in difficulties table
+    push ix
+    pop hl
+
     ld de,str_hi_score
     call gen_score_str
 

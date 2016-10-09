@@ -174,19 +174,28 @@ draw_border_char:
     ld (TBL_SNAKE_HISTORY + 1),a
 
     ld de,DIFFICULTIES_ROW_LENGTH
-    ld hl,difficulties + 4 - DIFFICULTIES_ROW_LENGTH
+    ld ix,difficulties - DIFFICULTIES_ROW_LENGTH
     ld a,(difficulty)
     inc a
     ld b,a
 
 inc_difficulty:
 
-    add hl,de
+    add ix,de
 
     djnz inc_difficulty
 
-    ld a,(hl)
+    ; Set snake speed
+    ld a,(ix + 4)
     ld (no_of_frames_per_update),a
+
+    ; Set high score string from value in difficulties table
+    push ix
+    pop hl
+    ld de,5
+    add hl,de
+    ld de,str_hi_score
+    call gen_score_str
 
     ld a,3
     ld (snake_length),a
