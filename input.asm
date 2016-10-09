@@ -104,7 +104,18 @@ kempston_joy_up_right:
     jr nz,queue_up_right
 
     ; Else, current direction is up/down
-    jp queue_right_up
+
+; Queue right-up
+
+    ld e,0x81
+
+    jp save_direction_queue
+
+queue_up_right:
+
+    ld e,0x18
+
+    jp save_direction_queue
 
 kempston_joy_down_right:
 
@@ -114,41 +125,8 @@ kempston_joy_down_right:
     jr nz,queue_down_right
 
     ; Else, current direction is up/down
-    jp queue_right_down
 
-kempston_joy_down_left:
-
-    ; If current direction is left/right
-    ld a,d
-    and 0x03
-    jr nz,queue_down_left
-
-    ; Else, current direction is up/down
-    jp queue_left_down
-
-kempston_joy_up_left:
-
-    ; If current direction is left/right
-    ld a,d
-    and 0x03
-    jr nz,queue_up_left
-
-    ; Else, current direction is up/down
-    jp queue_left_up
-
-queue_up_right:
-
-    ld e,0x18
-
-    jp save_direction_queue
-
-queue_right_up:
-
-    ld e,0x81
-
-    jp save_direction_queue
-
-queue_right_down:
+; Queue right-down
 
     ld e,0x41
 
@@ -160,19 +138,37 @@ queue_down_right:
 
     jp save_direction_queue
 
+kempston_joy_down_left:
+
+    ; If current direction is left/right
+    ld a,d
+    and 0x03
+    jr nz,queue_down_left
+
+    ; Else, current direction is up/down
+
+; Queue left-down
+
+    ld e,0x42
+
+    jp save_direction_queue
+
 queue_down_left:
 
     ld e,0x24
 
     jp save_direction_queue
 
-queue_left_down:
+kempston_joy_up_left:
 
-    ld e,0x42
+    ; If current direction is left/right
+    ld a,d
+    and 0x03
+    jr nz,queue_up_left
 
-    jp save_direction_queue
+    ; Else, current direction is up/down
 
-queue_left_up:
+; Queue left-up
 
     ld e,0x82
 
