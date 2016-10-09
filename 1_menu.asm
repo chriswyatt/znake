@@ -134,6 +134,8 @@ input_loop:
 
     ld b,a
 
+    ; Only capture up/down
+    and 0x0f
     ld hl,menu_last_direction
     cp (hl)
 
@@ -141,7 +143,7 @@ input_loop:
 
     ; Same direction
 
-    bit 4,a
+    bit 4,b
     jr nz,init
 
     ld a,(23672)
