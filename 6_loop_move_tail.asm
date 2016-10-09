@@ -67,16 +67,34 @@ tail_moving_vertically:
     sub c
     jr c,tail_moving_down
 
-; Tail moving up
+macro move_tail, chop_comparitor, graphics_low_addr, direction
 
-    cp 0x01
+    cp chop_comparitor
     jr z,chop_off_tail
 
-    ; Shift location up
-    dec d
+    if direction = 0x08
+        ; Shift location up
+        dec d
+    endif
+    if direction = 0x04
+        ; Shift location down
+        inc d
+    endif
+    if direction = 0x02
+        ; Get tail location again and shift it left
+        ld a,d
+        sub 0x10
+        ld d,a
+    endif
+    if direction = 0x01
+        ; Get tail location again and shift it right
+        ld a,d
+        add a,0x10
+        ld d,a
+    endif
 
     ; Low bit of graphics
-    ld e,0x68
+    ld e,graphics_low_addr
 
     ; Draw later
     push de
@@ -87,75 +105,29 @@ tail_moving_vertically:
     ; And update the existing tail location in our table
     ld (hl),d
 
+endm
+
+; Tail moving up
+
+    move_tail 0x01, 0x68, 0x08
+
     jp collision_detection
 
 tail_moving_right:
 
-    cp 0xf0
-    jr z,chop_off_tail
-
-    ; Get tail location again and shift it right
-    ld a,d
-    add a,0x10
-    ld d,a
-
-    ; Low bit of graphics
-    ld e,0x70
-
-    ; Draw later
-    push de
-
-    ; Otherwise, move pointer back to tail
-    dec l
-
-    ; And update the existing tail location in our table
-    ld (hl),d
+    move_tail 0xf0, 0x70, 0x01
 
     jp collision_detection
 
 tail_moving_left:
 
-    cp 0x10
-    jr z,chop_off_tail
-
-    ; Get tail location again and shift it left
-    ld a,d
-    sub 0x10
-    ld d,a
-
-    ; Low bit of graphics
-    ld e,0x60
-
-    ; Draw later
-    push de
-
-    ; Otherwise, move pointer back to tail
-    dec l
-
-    ; And update the existing tail location in our table
-    ld (hl),d
+    move_tail 0x10, 0x60, 0x02
 
     jp collision_detection
 
 tail_moving_down:
 
-    cp 0xff
-    jr z,chop_off_tail
-
-    ; Shift location down
-    inc d
-
-    ; Low bit of graphics
-    ld e,0x58
-
-    ; Draw later
-    push de
-
-    ; Otherwise, move pointer back to tail
-    dec l
-
-    ; And update the existing tail location in our table
-    ld (hl),d
+    move_tail 0xff, 0x58, 0x04
 
     jp collision_detection
 
