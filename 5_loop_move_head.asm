@@ -14,6 +14,47 @@
 
 ; /////////////////////////////////////////////////////////////////////////////
 
+macro move_head_vertical, head_turning_left_addr, head_turning_right_addr, direction, graphics_low_addr
+
+    ; Load head location to register b
+    ld b,e
+
+    ; Depending on the current direction, the new head location may be placed
+    ; to the right or to the left ...
+
+    bit 0,d
+    jr nz,head_turning_right_addr
+
+    bit 1,d
+    jr nz,head_turning_left_addr
+
+    ; Low bit of graphics
+    ld c,0x28
+
+    ; Draw later
+    push bc
+
+    ; ... otherwise the head is still moving vertically
+
+    ; Get head location again and shift it up
+    if direction = 0x08
+        dec b
+    endif
+    if direction = 0x04
+        inc b
+    endif
+
+    ; Low bit of graphics
+    ld c,graphics_low_addr
+
+    ; Draw later
+    push bc
+
+    ; Update the existing head location in our table
+    ld (hl),b
+
+endm
+
 macro move_head_horizontal, head_turning_up_addr, head_turning_down_addr, direction, graphics_low_addr
 
     ; Load head location to register b
@@ -244,37 +285,7 @@ head_moving_vertically:
 
 ; Head moving up
 
-    ; Load head location to register b
-    ld b,e
-
-    ; Depending on the current direction, the new head location may be placed
-    ; to the right or to the left ...
-
-    bit 0,d
-    jr nz,head_turning_up_right
-
-    bit 1,d
-    jr nz,head_turning_up_left
-
-    ; Low bit of graphics
-    ld c,0x28
-
-    ; Draw later
-    push bc
-
-    ; ... otherwise the head is still moving up
-
-    ; Get head location again and shift it up
-    dec b
-
-    ; Low bit of graphics
-    ld c,0x08
-
-    ; Draw later
-    push bc
-
-    ; Update the existing head location in our table
-    ld (hl),b
+    move_head_vertical head_turning_up_left, head_turning_up_right, 0x08, 0x08
 
     jp check_food_eaten
 
@@ -346,37 +357,7 @@ head_turning_up_left:
 
 head_moving_down:
 
-    ; Load head location to register b
-    ld b,e
-
-    ; Depending on the current direction, the new head location may be placed
-    ; to the right or to the left ...
-
-    bit 0,d
-    jr nz,head_turning_down_right
-
-    bit 1,d
-    jr nz,head_turning_down_left
-
-    ; Low bit of graphics
-    ld c,0x28
-
-    ; Draw later
-    push bc
-
-    ; ... otherwise the head is still moving up
-
-    ; Get head location again and shift it down
-    inc b
-
-    ; Low bit of graphics
-    ld c,0x18
-
-    ; Draw later
-    push bc
-
-    ; Update the existing head location in our table
-    ld (hl),b
+    move_head_vertical head_turning_down_left, head_turning_down_right, 0x04, 0x18
 
     jp check_food_eaten
 
