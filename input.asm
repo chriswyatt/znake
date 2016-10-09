@@ -34,7 +34,7 @@ read_kempston_d:
 
     ld (last_input),a
 
-    ; Filter out bits that have not changed from the last input
+    ; Filter out high bits that have not changed from the last input
     xor b
     and c
 

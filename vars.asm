@@ -17,11 +17,11 @@
 menu_last_direction: db 0x00
 menu_last_direction_frame_count: db 0x00
 
-str_easier: db "Boring\0"
+str_easier: db "Easier\0"
 str_easy:   db " Easy \0"
 str_medium: db "Normal\0"
 str_hard:   db " Hard \0"
-str_harder: db "Insane\0"
+str_harder: db "Harder\0"
 
 str_score_lbl: db "Sc:\0"
 str_hi_score_lbl: db "Hi:\0"
