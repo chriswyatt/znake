@@ -113,9 +113,9 @@ endm
 
     jp collision_detection
 
-tail_moving_right:
+tail_moving_down:
 
-    move_tail 0xf0, 0x70, 0x01
+    move_tail 0xff, 0x58, 0x04
 
     jp collision_detection
 
@@ -125,9 +125,9 @@ tail_moving_left:
 
     jp collision_detection
 
-tail_moving_down:
+tail_moving_right:
 
-    move_tail 0xff, 0x58, 0x04
+    move_tail 0xf0, 0x70, 0x01
 
     jp collision_detection
 
@@ -189,16 +189,6 @@ new_tail_moving_vertically:
 
     jp collision_detection
 
-new_tail_moving_right:
-
-    ; Low bit of graphics
-    ld e,0x70
-
-    ; Draw later
-    push de
-
-    jp collision_detection
-
 new_tail_moving_down:
 
     ; Low bit of graphics
@@ -213,6 +203,16 @@ new_tail_moving_left:
 
     ; Low bit of graphics
     ld e,0x60
+
+    ; Draw later
+    push de
+
+    jp collision_detection
+
+new_tail_moving_right:
+
+    ; Low bit of graphics
+    ld e,0x70
 
     ; Draw later
     push de
