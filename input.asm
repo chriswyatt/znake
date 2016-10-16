@@ -22,8 +22,7 @@ check_input:
     ld a,(snake_direction_queue)
     ld e,a
 
-; Check for diagonal input from Kempston joystick port
-read_kempston_d:
+; Check for input from Kempston joystick port
 
     ld a,(last_input)
     ld b,a
@@ -32,13 +31,23 @@ read_kempston_d:
     and 0x0f
     ld c,a
 
+    cp b
+    ret z
+
     ld (last_input),a
 
-    ; Filter out high bits that have not changed from the last input
+    or a
+    jp po,kempston_joy_hv
+
+; Kempston diagonal
+
+    ; If multiple buttons are pressed, get only the newly activated bits
+
     xor b
     and c
+    ld c,a
 
-    jp po,read_kempston_hv
+    jp po,kempston_joy_hv
 
     ; up-right (bits 0 and 3)
     cp 0x09
@@ -56,43 +65,9 @@ read_kempston_d:
     cp 0x0a
     jr z,kempston_joy_up_left
 
-read_kempston_hv:
-
-    ; Horizontal/vertical logic relies on last queued direction(s)
-
-    ; Get last direction(s)
-    ld a,e
-    or a
-    jr z,direction_not_queued
-
-    ; Otherwise, direction queued
-    ld c,a
-    jp direction_queued
-
-direction_not_queued:
-
-    ld c,d
-
-; Check for horizontal/vertical input from Kempston joystick port
-direction_queued:
-
-    in a,(0x1f)
-
-    cp 0x08 ; up
-    jr z,kempston_joy_up
-
-    cp 0x04 ; down
-    jr z,kempston_joy_down
-
-    cp 0x02 ; left
-    jr z,kempston_joy_left
-
-    cp 0x01 ; right
-    jr z,kempston_joy_right
-
-    ; Restore last input
-    ld a,b
-    ld (last_input),a
+    ; ld a,e
+    ; and 0x0f
+    ; ld (snake_direction_queue),a
 
     ret
 
@@ -180,46 +155,16 @@ queue_up_left:
 
     jp save_direction_queue
 
-kempston_joy_up:
-
-    ; Direction requested, bitmask for left and right
-    ld hl,0x0803
-
-    jp kempston_joy_hv
-
-kempston_joy_right:
-
-    ; Direction requested, bitmask for up and down
-    ld hl,0x010c
-
-    jp kempston_joy_hv
-
-kempston_joy_down:
-
-    ; Direction requested, bitmask for left and right
-    ld hl,0x0403
-
-    jp kempston_joy_hv
-
-kempston_joy_left:
-
-    ; Direction requested, bitmask for up and down
-    ld hl,0x020c
-
 ; Deal with queuing horizontal/vertical direction requests
 kempston_joy_hv:
 
-    ; Load last requested direction into accumulator
-    ld a,c
-
-    ; If 0 or 1 last requested directions, jump
-
+    ld a,e
     or a
-    jp po,kempston_joy_hv_part_2
-    jr z,kempston_joy_hv_part_2
+    jr z,queue_empty
+    jp po,queue_one
 
-    ; Otherwise, use the higher bits, as these contain the last requested
-    ; direction
+    ; If 2 directions in queue, use the higher bits, as these contain the last
+    ; requested direction
 
     rrca
     rrca
@@ -227,11 +172,34 @@ kempston_joy_hv:
     rrca
     and 0x0f
 
-kempston_joy_hv_part_2:
+    jp queue_one
 
-    ; If last direction requested is not in bitmask, ignore
-    and l
-    jr z,save_direction_queue
+queue_empty:
+
+    ld a,d
+
+queue_one:
+
+    cp 0x04
+    jr nc,last_req_v
+
+; Last requested direction is horizontal
+
+    ; Bitmask for vertical directions
+    ld a,c
+    and 0x0c
+    ret z
+
+    jp kempston_joy_hv_part_2
+
+last_req_v:
+
+    ; Bitmask for horizontal directions
+    ld a,c
+    and 0x03
+    ret z
+
+kempston_joy_hv_part_2:
 
     ld a,e
 
@@ -241,7 +209,7 @@ kempston_joy_hv_part_2:
 
     ; Otherwise append
 
-    ld a,h
+    ld a,c
     rlca
     rlca
     rlca
@@ -254,7 +222,7 @@ kempston_joy_hv_part_2:
 
 replace_direction_queue:
 
-    ld e,h
+    ld e,c
 
 save_direction_queue:
 
