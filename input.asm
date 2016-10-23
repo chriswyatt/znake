@@ -208,8 +208,8 @@ kempston_joy_hv:
     jr z,queue_empty
     jp po,queue_one
 
-    ; If 2 directions in queue, use the higher nibble, as this contain the last
-    ; requested direction
+    ; If 2 directions in queue, use the higher nibble, as this contains the
+    ; last requested direction
 
     rrca
     rrca
