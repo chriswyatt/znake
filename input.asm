@@ -41,12 +41,6 @@ check_input:
 
 ; Kempston diagonal
 
-    ; If multiple buttons are pressed, get only the newly activated bits
-
-    xor b
-    and c
-    ld c,a
-
     jp po,kempston_joy_hv
 
     ; up-right (bits 0 and 3)
