@@ -59,10 +59,6 @@ check_input:
     cp 0x0a
     jr z,kempston_joy_up_left
 
-    ; ld a,e
-    ; and 0x0f
-    ; ld (snake_direction_queue),a
-
     ret
 
 kempston_joy_up_right:
