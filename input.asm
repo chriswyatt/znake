@@ -19,9 +19,6 @@ check_input:
     ld a,(snake_direction_current)
     ld d,a
 
-    ld a,(snake_direction_queue)
-    ld e,a
-
 ; Check for input from Kempston joystick port
 
     ld a,(last_input)
@@ -131,73 +128,87 @@ kempston_joy_up_left:
 
 queue_up:
 
-    ld e,0x08
-    jp save_direction_queue
+    ld a,0x08
+    ld (snake_direction_queue),a
+    ret
 
 queue_down:
 
-    ld e,0x04
-    jp save_direction_queue
+    ld a,0x04
+    ld (snake_direction_queue),a
+    ret
 
 queue_left:
 
-    ld e,0x02
-    jp save_direction_queue
+    ld a,0x02
+    ld (snake_direction_queue),a
+    ret
 
 queue_right:
 
-    ld e,0x01
-    jp save_direction_queue
+    ld a,0x01
+    ld (snake_direction_queue),a
+    ret
 
 queue_up_left:
 
-    ld e,0x28
-    jp save_direction_queue
+    ld a,0x28
+    ld (snake_direction_queue),a
+    ret
 
 queue_up_right:
 
-    ld e,0x18
-    jp save_direction_queue
+    ld a,0x18
+    ld (snake_direction_queue),a
+    ret
 
 queue_down_left:
 
-    ld e,0x24
-    jp save_direction_queue
+    ld a,0x24
+    ld (snake_direction_queue),a
+    ret
 
 queue_down_right:
 
-    ld e,0x14
-    jp save_direction_queue
+    ld a,0x14
+    ld (snake_direction_queue),a
+    ret
 
 queue_left_up:
 
-    ld e,0x82
-    jp save_direction_queue
+    ld a,0x82
+    ld (snake_direction_queue),a
+    ret
 
 queue_left_down:
 
-    ld e,0x42
-    jp save_direction_queue
+    ld a,0x42
+    ld (snake_direction_queue),a
+    ret
 
 queue_right_up:
 
-    ld e,0x81
-    jp save_direction_queue
+    ld a,0x81
+    ld (snake_direction_queue),a
+    ret
 
 queue_right_down:
 
-    ld e,0x41
-    jp save_direction_queue
+    ld a,0x41
+    ld (snake_direction_queue),a
+    ret
 
 ; Deal with queuing horizontal/vertical direction requests
 kempston_joy_hv:
 
-    ld a,e
+    ld a,(snake_direction_queue)
+    ld e,a
+
     or a
     jr z,queue_empty
     jp po,queue_one
 
-    ; If 2 directions in queue, use the higher bits, as these contain the last
+    ; If 2 directions in queue, use the higher nibble, as this contain the last
     ; requested direction
 
     rrca
@@ -210,6 +221,7 @@ kempston_joy_hv:
 
 queue_empty:
 
+    ; Current direction is the last requested direction
     ld a,d
 
 queue_one:
@@ -224,7 +236,7 @@ queue_one:
     and 0x0c
     ret z
 
-    jp kempston_joy_hv_part_2
+    jp check_queue
 
 last_req_v:
 
@@ -233,15 +245,21 @@ last_req_v:
     and 0x03
     ret z
 
-kempston_joy_hv_part_2:
+check_queue:
 
     ld a,e
 
-    ; If queue contains 0 or 2 directions, replace
+    ; If queue contains 1 direction, append
     or a
-    jp pe,replace_direction_queue
+    jp po,append_to_direction_queue
 
-    ; Otherwise append
+    ; Otherwise replace
+
+    ld a,c
+    ld (snake_direction_queue),a
+    ret
+
+append_to_direction_queue:
 
     ld a,c
     rlca
@@ -250,16 +268,6 @@ kempston_joy_hv_part_2:
     rlca
     and 0xf0
     or e
-    ld e,a
 
-    jp save_direction_queue
-
-replace_direction_queue:
-
-    ld e,c
-
-save_direction_queue:
-
-    ld a,e
     ld (snake_direction_queue),a
     ret
