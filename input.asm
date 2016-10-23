@@ -63,86 +63,130 @@ check_input:
 
 kempston_joy_up_right:
 
-    ; If current direction is left/right
-    ld a,d
-    and 0x03
+    ; If current direction is up
+    bit 3,d
+    jr nz,queue_right
+
+    ; If current direction is down
+    bit 2,d
+    jr nz,queue_right_up
+
+    ; If current direction is left
+    bit 1,d
     jr nz,queue_up_right
 
-    ; Else, current direction is up/down
-
-; Queue right-up
-
-    ld e,0x81
-
-    jp save_direction_queue
-
-queue_up_right:
-
-    ld e,0x18
-
-    jp save_direction_queue
+    ; Current direction is right
+    jp queue_up
 
 kempston_joy_down_right:
 
-    ; If current direction is left/right
-    ld a,d
-    and 0x03
+    ; If current direction is up
+    bit 3,d
+    jr nz,queue_right_down
+
+    ; If current direction is down
+    bit 2,d
+    jr nz,queue_right
+
+    ; If current direction is left
+    bit 1,d
     jr nz,queue_down_right
 
-    ; Else, current direction is up/down
-
-; Queue right-down
-
-    ld e,0x41
-
-    jp save_direction_queue
-
-queue_down_right:
-
-    ld e,0x14
-
-    jp save_direction_queue
+    ; Current direction is right
+    jp queue_down
 
 kempston_joy_down_left:
 
-    ; If current direction is left/right
-    ld a,d
-    and 0x03
-    jr nz,queue_down_left
+    ; If current direction is up
+    bit 3,d
+    jr nz,queue_left_down
 
-    ; Else, current direction is up/down
+    ; If current direction is down
+    bit 2,d
+    jr nz,queue_left
 
-; Queue left-down
+    ; If current direction is left
+    bit 1,d
+    jr nz,queue_down
 
-    ld e,0x42
-
-    jp save_direction_queue
-
-queue_down_left:
-
-    ld e,0x24
-
-    jp save_direction_queue
+    ; Current direction is right
+    jp queue_down_left
 
 kempston_joy_up_left:
 
-    ; If current direction is left/right
-    ld a,d
-    and 0x03
-    jr nz,queue_up_left
+    ; If current direction is up
+    bit 3,d
+    jr nz,queue_left
 
-    ; Else, current direction is up/down
+    ; If current direction is down
+    bit 2,d
+    jr nz,queue_left_up
 
-; Queue left-up
+    ; If current direction is left
+    bit 1,d
+    jr nz,queue_up
 
-    ld e,0x82
+    ; Current direction is right
+    jp queue_up_left
 
+queue_up:
+
+    ld e,0x08
+    jp save_direction_queue
+
+queue_down:
+
+    ld e,0x04
+    jp save_direction_queue
+
+queue_left:
+
+    ld e,0x02
+    jp save_direction_queue
+
+queue_right:
+
+    ld e,0x01
     jp save_direction_queue
 
 queue_up_left:
 
     ld e,0x28
+    jp save_direction_queue
 
+queue_up_right:
+
+    ld e,0x18
+    jp save_direction_queue
+
+queue_down_left:
+
+    ld e,0x24
+    jp save_direction_queue
+
+queue_down_right:
+
+    ld e,0x14
+    jp save_direction_queue
+
+queue_left_up:
+
+    ld e,0x82
+    jp save_direction_queue
+
+queue_left_down:
+
+    ld e,0x42
+    jp save_direction_queue
+
+queue_right_up:
+
+    ld e,0x81
+    jp save_direction_queue
+
+queue_right_down:
+
+    ld e,0x41
     jp save_direction_queue
 
 ; Deal with queuing horizontal/vertical direction requests
