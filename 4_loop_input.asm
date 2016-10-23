@@ -18,7 +18,7 @@ next_input_loop:
 
     call check_input
 
-    ; If the current frame count is less than the previous frame count, plus
+    ; If the current frame count is less than the previous frame count plus
     ; frame_wait, then continue input loop
 
     ld hl,previous_frame_count
@@ -31,27 +31,26 @@ next_input_loop:
 
     jr c,next_input_loop
 
-    ; Otherwise, store the new frame count ...
+    ; Otherwise, move snake
 
+    ; Store the new frame count
     ld a,(23672)
     ld (previous_frame_count),a
 
-    ; ... and update the current direction
-
-    ; If direction not queued, jump
+    ; Get highest priority direction
     ld a,(snake_direction_queue)
     ld b,a
     and 0x0f
+
+    ; If no direction queued, continue moving snake in same direction
+
     jr z,update_head_history
 
-    ; Otherwise, update the current direction ...
+    ; Otherwise, change snake direction
 
     ld (snake_direction_current),a
 
-    ; Used in update_head_history
-    ld d,a
-
-    ; ... and pop the new direction from the direction queue
+    ; Pop the new direction from the direction queue
 
     ld a,b
     rrca

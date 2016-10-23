@@ -204,6 +204,9 @@ endm
 
 update_head_history:
 
+    ld a,(snake_direction_current)
+    ld d,a
+
     ld h,(TBL_SNAKE_HISTORY >> 8) & $FF
 
     ; Move pointer to end of snake history
