@@ -58,39 +58,22 @@ check_input:
 
     ret
 
-kempston_joy_up_right:
+kempston_joy_up_left:
 
     ; If current direction is up
     bit 3,d
-    jr nz,queue_right
+    jr nz,queue_left
 
     ; If current direction is down
     bit 2,d
-    jr nz,queue_right_up
+    jr nz,queue_left_up
 
     ; If current direction is left
     bit 1,d
-    jr nz,queue_up_right
+    jr nz,queue_up
 
     ; Current direction is right
-    jp queue_up
-
-kempston_joy_down_right:
-
-    ; If current direction is up
-    bit 3,d
-    jr nz,queue_right_down
-
-    ; If current direction is down
-    bit 2,d
-    jr nz,queue_right
-
-    ; If current direction is left
-    bit 1,d
-    jr nz,queue_down_right
-
-    ; Current direction is right
-    jp queue_down
+    jp queue_up_left
 
 kempston_joy_down_left:
 
@@ -109,22 +92,38 @@ kempston_joy_down_left:
     ; Current direction is right
     jp queue_down_left
 
-kempston_joy_up_left:
+kempston_joy_down_right:
 
     ; If current direction is up
     bit 3,d
-    jr nz,queue_left
+    jr nz,queue_right_down
 
     ; If current direction is down
     bit 2,d
-    jr nz,queue_left_up
+    jr nz,queue_right
 
     ; If current direction is left
     bit 1,d
-    jr nz,queue_up
+    jr nz,queue_down_right
 
     ; Current direction is right
-    jp queue_up_left
+    jp queue_down
+
+kempston_joy_up_right:
+
+    ; If current direction is up
+    bit 3,d
+    jr nz,queue_right
+
+    ; If current direction is down
+    bit 2,d
+    jr nz,queue_right_up
+
+    ; If current direction is left
+    bit 1,d
+    jr nz,queue_up_right
+
+    ; Current direction is right
 
 queue_up:
 
@@ -236,13 +235,27 @@ queue_one:
     and 0x0c
     ret z
 
-    jp check_queue
+    jp kempston_joy_v_check
 
 last_req_v:
 
     ; Bitmask for horizontal directions
     ld a,c
     and 0x03
+    ret z
+
+kempston_joy_h_check:
+
+    ; If left and right pins are both on, return
+    cp 0x03
+    ret z
+
+    jp check_queue
+
+kempston_joy_v_check:
+
+    ; If up and down pins are both on, return
+    cp 0x0c
     ret z
 
 check_queue:
