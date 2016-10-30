@@ -76,6 +76,14 @@ menu_start:
     ld ix,difficulties
     ld iy,draw_line_xor
 
+    ld hl,str_title
+    ld de,0x0b02
+    call print
+
+    ld hl,str_credits
+    ld de,0x0715
+    call print
+
     ld h,(ix + 1)
     ld l,(ix)
     ld d,(ix + 3)

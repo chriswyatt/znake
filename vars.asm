@@ -17,6 +17,9 @@
 menu_last_direction: db 0x00
 menu_last_direction_frame_count: db 0x00
 
+str_title: db "Z N A K E\0"
+str_credits: db "Chris Wyatt ", 0x7f, " 2016\0"
+
 str_easier: db "Easier\0"
 str_easy:   db " Easy \0"
 str_medium: db "Normal\0"

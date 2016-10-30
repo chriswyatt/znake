@@ -16,10 +16,6 @@
 
 include const.asm
 
-org 0x8000
-
-include vars.asm
-
 org 0x8080
 
 include im2_routine.asm
@@ -27,6 +23,8 @@ include im2_routine.asm
 org 0x8100
 
 include graphics.asm
+
+include vars.asm
 
 include utils.asm
 
