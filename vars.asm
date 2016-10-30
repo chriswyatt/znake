@@ -35,27 +35,27 @@ difficulty: db 0x02
 difficulties:
 
     dw str_easier
-    dw 0x0c07
+    dw 0x0d07
     db 36
     dw 0x0000
 
     dw str_easy
-    dw 0x0c09
+    dw 0x0d09
     db 12
     dw 0x0000
 
     dw str_medium
-    dw 0x0c0b
+    dw 0x0d0b
     db 6
     dw 0x0000
 
     dw str_hard
-    dw 0x0c0d
+    dw 0x0d0d
     db 4
     dw 0x0000
 
     dw str_harder
-    dw 0x0c0f
+    dw 0x0d0f
     db 3
     dw 0x0000
 

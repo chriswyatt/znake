@@ -76,6 +76,132 @@ menu_start:
     ld ix,difficulties
     ld iy,draw_line_xor
 
+    ; Push col/row and memory locations of graphics to stack, ready to draw
+    ; later
+
+; Push top border
+
+    ld b,12
+
+    ; Location of border top
+    ld hl,0x8180
+
+    ; Column/row
+    ld de,0x0a05
+
+menu_push_top_border_next:
+
+    push hl
+    push de
+
+    inc d
+    djnz menu_push_top_border_next
+
+; Push right border
+
+    ld b,11
+
+    ; Location of border right
+    ld hl,0x8188
+
+    ; Column/row
+    ld de,0x1606
+
+menu_push_right_border_next:
+
+    push hl
+    push de
+
+    inc e
+    djnz menu_push_right_border_next
+
+; Push bottom border
+
+    ld b,12
+
+    ; Location of border bottom
+    ld hl,0x8190
+
+    ; Column/row
+    ld de,0x0a11
+
+menu_push_bottom_border_next:
+
+    push hl
+    push de
+
+    inc d
+    djnz menu_push_bottom_border_next
+
+; Push left border
+
+    ld b,11
+
+    ; Location of border left
+    ld hl,0x8198
+
+    ; Column/row
+    ld de,0x0906
+
+menu_push_left_border_next:
+
+    push hl
+    push de
+
+    inc e
+    djnz menu_push_left_border_next
+
+; Push border corners
+
+    ; Location of border top-right
+    ld hl,0x81a0
+
+    ; Column/row
+    ld de,0x1605
+
+    push hl
+    push de
+
+    ; Location of border bottom-right
+    ld hl,0x81a8
+
+    ; Column/row
+    ld de,0x1611
+
+    push hl
+    push de
+
+    ; Location of border bottom-left
+    ld hl,0x81b0
+
+    ; Column/row
+    ld de,0x0911
+
+    push hl
+    push de
+
+    ; Location of border top-left
+    ld hl,0x81b8
+
+    ; Column/row
+    ld de,0x0905
+
+    push hl
+    push de
+
+    ld c,12 + 11 + 12 + 11 + 4
+
+    halt
+
+menu_draw_border_char:
+
+    pop de
+    pop hl
+    call draw_char
+
+    dec c
+    jr nz,menu_draw_border_char
+
     ld hl,str_title
     ld de,0x0b02
     call print
