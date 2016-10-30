@@ -20,43 +20,43 @@ menu_last_direction_frame_count: db 0x00
 str_title: db "Z N A K E\0"
 str_credits: db "Chris Wyatt ", 0x7f, " 2016\0"
 
-str_easier: db "Easier\0"
 str_easy:   db " Easy \0"
-str_medium: db "Normal\0"
+str_normal: db "Normal\0"
 str_hard:   db " Hard \0"
-str_harder: db "Harder\0"
+str_expert: db "Expert\0"
+str_guru:   db " Guru \0"
 
 str_score_lbl: db "Sc:\0"
 str_hi_score_lbl: db "Hi:\0"
 
-difficulty: db 0x02
+difficulty: db 0x01
 
 ; string, display location, snake speed, high score
 difficulties:
 
-    dw str_easier
-    dw 0x0d07
-    db 36
-    dw 0x0000
-
     dw str_easy
-    dw 0x0d09
-    db 12
+    dw 0x0d07
+    db 18
     dw 0x0000
 
-    dw str_medium
-    dw 0x0d0b
+    dw str_normal
+    dw 0x0d09
     db 6
     dw 0x0000
 
     dw str_hard
-    dw 0x0d0d
+    dw 0x0d0b
     db 4
     dw 0x0000
 
-    dw str_harder
-    dw 0x0d0f
+    dw str_expert
+    dw 0x0d0d
     db 3
+    dw 0x0000
+
+    dw str_guru
+    dw 0x0d0f
+    db 2
     dw 0x0000
 
 ; Starting offset for snake history
