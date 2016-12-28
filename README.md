@@ -11,10 +11,11 @@ If anyone would like to help me improve the game (even if only the graphics), pl
 This is my first attempt at assembly so the code is probably not a fantastic example. I am open to suggestions/improvements; however as I work on this project in my spare time, it could take me a while to address them.
 
 ## How to play
-You will need to download [znake.tap](znake.tap) and you will need an emulator, e.g. [Speccy](http://fms.komkon.org/Speccy/). The Kempston joystick interface must be enabled, as keyboard controls are not currently supported.
+You will need to download [znake.tap](znake.tap) and you will need an emulator, e.g. [Speccy](http://fms.komkon.org/Speccy/).
+Use Q, A and [ENTER] to select the difficulty and Q, A, O and P to control the snake. Previous versions only supported the Kempston interface; however this was dropped in favour of keyboard support. Support for the Kempston interface may be reintroduced in the future.
 
 ## ZX Vega
-The game will 'just work' on the ZX Vega; a keymap is not required.
+You will need to map the keyboard to the ZX Vega controls. A keymap is included for convenience: just place [znake.zxk](znake.zxk) within the same directory as [znake.tap](znake.tap).
 
 ## Assemble
 Znake was assembled using Pasmo:
