@@ -29,18 +29,18 @@ check_input:
     ld a,0xfb ; 7 R E W Q
     in a,(0xfe)
     cpl
-    and 0x01
     rlca
     rlca
     rlca
+    and 0x08
     ld c,a
 
     ld a,0xfd ; G F D S A
     in a,(0xfe)
     cpl
-    and 0x01
     rlca
     rlca
+    and 0x04
     or c
     ld c,a
 
@@ -243,42 +243,28 @@ kempston_joy_hv:
     ld e,a
 
     or a
-    jr z,queue_empty
     jp po,queue_one
 
-    ; If 2 directions in queue, use the higher nibble, as this contains the
-    ; last requested direction
-
-    rrca
-    rrca
-    rrca
-    rrca
-    and 0x0f
-
-    jp queue_one
-
-queue_empty:
-
-    ; Current direction is the last requested direction
+    ; Use current direction as the next queued direction
     ld a,d
 
 queue_one:
 
     cp 0x04
-    jr nc,last_req_v
+    jr nc,next_queued_v
 
-; Last requested direction is horizontal
+; Next queued direction is horizontal
 
-    ; Bitmask for vertical directions
+    ; Capture only vertical directions
     ld a,c
     and 0x0c
     ret z
 
     jp kempston_joy_v_check
 
-last_req_v:
+next_queued_v:
 
-    ; Bitmask for horizontal directions
+    ; Capture only horizontal directions
     ld a,c
     and 0x03
     ret z
@@ -299,6 +285,7 @@ kempston_joy_v_check:
 
 check_queue:
 
+    ld c,a
     ld a,e
 
     ; If queue contains 1 direction, append
@@ -306,7 +293,6 @@ check_queue:
     jp po,append_to_direction_queue
 
     ; Otherwise replace
-
     ld a,c
     ld (snake_direction_queue),a
     ret
