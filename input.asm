@@ -24,9 +24,48 @@ check_input:
     ld a,(last_input)
     ld b,a
 
-    in a,(0x1f)
-    and 0x0f
+    ; Map Q, A, O, P to Kempston bits: 000FUDLR
+
+    ld a,0xfb ; 7 R E W Q
+    in a,(0xfe)
+    cpl
+    and 0x01
+    rlca
+    rlca
+    rlca
     ld c,a
+
+    ld a,0xfd ; G F D S A
+    in a,(0xfe)
+    cpl
+    and 0x01
+    rlca
+    rlca
+    or c
+    ld c,a
+
+    ld a,0xdf ; Y U I O P
+    in a,(0xfe)
+    cpl
+    and 0x03
+    or c
+    ld c,a
+
+    ; Kempston support is now disabled in favour of keyboard support.
+
+    ; Unfortunately, we cannot just OR both inputs, as the Kempston input just
+    ; seems to be noise in both FUSE and Spectaculator, that is, unless the
+    ; interface is enabled (presumably this the behaviour on the actual
+    ; hardware).
+
+    ; Supporting both will require adding a Kempston on/off toggle on the menu
+    ; screen, and possibly a redesign of the menu, which is currently only used
+    ; for difficulty selection.
+
+    ; in a,(0x1f)
+    ; and 0x0f
+    ; or c
+    ; ld c,a
 
     cp b
     ret z

@@ -260,12 +260,43 @@ select_difficulty_offset_increment:
 
 input_loop:
 
-    ; Kempston
-    in a,(0x1f)
+    ; Map Q, A, [ENTER] to Kempston bits: 000FUDLR
+
+    ld c,0x01
+
+    ld a,0xfb ; 7 R E W Q
+    in a,(0xfe)
+    cpl
+    and c
+    rlca
+    rlca
+    rlca
+    ld b,a
+
+    ld a,0xfd ; G F D S A
+    in a,(0xfe)
+    cpl
+    and c
+    rlca
+    rlca
+    or b
+    ld b,a
+
+    ld a,0xbf ; H J K L [ENTER]
+    in a,(0xfe)
+    cpl
+    and c
+    rrca
+    rrca
+    rrca
+    rrca
+    or b
+    ld b,a
 
     ; Only capture up/down/fire
     and 0x1c
 
+    or b
     ld b,a
 
     ; Only capture up/down
@@ -348,4 +379,4 @@ unselect_current_difficulty:
 
     call select_difficulty
 
-    jr input_loop
+    jp input_loop
