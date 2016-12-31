@@ -16,9 +16,6 @@
 
 init:
 
-    ld hl,flags
-    res 1,(hl)
-
     ; Clear screen
     ld hl,0x4000
     ld de,0x4001

@@ -32,4 +32,4 @@ ldir
 im 2
 ei
 
-jp menu_start
+jp control_select

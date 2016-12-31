@@ -51,21 +51,16 @@ check_input:
     or c
     ld c,a
 
-    ; Kempston support is now disabled in favour of keyboard support.
+    ld hl,flags
+    bit 1,(hl)
+    jr z,skip_check_kempston_input
 
-    ; Unfortunately, we cannot just OR both inputs, as the Kempston input just
-    ; seems to be noise in both FUSE and Spectaculator, that is, unless the
-    ; interface is enabled (presumably this the behaviour on the actual
-    ; hardware).
+    in a,(0x1f)
+    and 0x0f
+    or c
+    ld c,a
 
-    ; Supporting both will require adding a Kempston on/off toggle on the menu
-    ; screen, and possibly a redesign of the menu, which is currently only used
-    ; for difficulty selection.
-
-    ; in a,(0x1f)
-    ; and 0x0f
-    ; or c
-    ; ld c,a
+skip_check_kempston_input:
 
     cp b
     ret z

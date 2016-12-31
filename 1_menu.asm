@@ -54,10 +54,7 @@ select_difficulty_move_pointer:
     call select_difficulty_draw
     ret
 
-menu_start:
-
-    ld a,(23672)
-    ld (menu_last_direction_frame_count),a
+control_select:
 
     ; Set border color to black
     xor a ; a = 0
@@ -70,8 +67,47 @@ menu_start:
     ld (hl),0
     ldir
 
+    ld iy,draw_line
+
+    ld de,0x0b08
+    ld hl,str_title
+    call print
+
+    ld de,0x0a0a
+    ld hl,str_keyboard
+    call print
+
+    ld de,0x0a0b
+    ld hl,str_kempston
+    call print
+
+control_select_check_key:
+
+    ld a,0xbf
+    in a,(0xfe)
+
+    bit 2,a
+    jr z,menu_start
+
+    bit 3,a
+    jr nz,control_select_check_key
+
+enable_kempston:
+
     ld hl,flags
     set 1,(hl)
+
+menu_start:
+
+    ld a,(23672)
+    ld (menu_last_direction_frame_count),a
+
+    ; Clear screen
+    ld hl,0x4000
+    ld de,0x4001
+    ld bc,0x17ff
+    ld (hl),0
+    ldir
 
     ld ix,difficulties
     ld iy,draw_line_xor
@@ -293,11 +329,16 @@ input_loop:
     or b
     ld b,a
 
-    ; Only capture up/down/fire
-    and 0x1c
+    ld hl,flags
+    bit 1,(hl)
+    jr z,input_loop_skip_kempston
 
+    in a,(0x1f)
+    and 0x1c
     or b
     ld b,a
+
+input_loop_skip_kempston:
 
     ; Only capture up/down
     and 0x0f

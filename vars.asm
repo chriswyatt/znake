@@ -18,6 +18,8 @@ menu_last_direction: db 0x00
 menu_last_direction_frame_count: db 0x00
 
 str_title: db "Z N A K E\0"
+str_keyboard: db "K - Keyboard\0"
+str_kempston: db "J - Kempston\0"
 str_credits: db "Chris Wyatt ", 0x7f, " 2016\0"
 
 str_easy:   db " Easy \0"
@@ -97,7 +99,7 @@ last_direction: db 0x00
 current_food_location: db 0x00
 
 ; Bit 0: Food eaten
-; Bit 1: Reserved
+; Bit 1: Kempston enabled
 ; Bit 2: Reserved
 ; Bit 3: Reserved
 ; Bit 4: Invalidate BL free squares table
