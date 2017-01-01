@@ -243,7 +243,7 @@ menu_draw_border_char:
     call print
 
     ld hl,str_credits
-    ld de,0x0715
+    ld de,0x0415
     call print
 
     ld h,(ix + 1)

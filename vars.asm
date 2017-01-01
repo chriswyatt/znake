@@ -20,7 +20,7 @@ menu_last_direction_frame_count: db 0x00
 str_title: db "Z N A K E\0"
 str_keyboard: db "K - Keyboard\0"
 str_kempston: db "J - Kempston\0"
-str_credits: db "Chris Wyatt ", 0x7f, " 2016\0"
+str_credits: db "Chris Wyatt ", 0x7f, " 2016, 2017\0"
 
 str_easy:   db " Easy \0"
 str_normal: db "Normal\0"
